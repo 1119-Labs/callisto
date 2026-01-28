@@ -341,3 +341,5 @@ require (
 	pgregory.net/rapid v1.1.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/forbole/juno/v6 => github.com/1119-Labs/juno/v6 v6.0.0-20260128043218-6e5e672abbbf

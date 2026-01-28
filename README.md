@@ -30,4 +30,6 @@ This will:
 1. Create a Docker container running a PostgreSQL database.
 2. Run all the tests using that database as support.
 
+psql -U postgres -d bdjuno -f 00-cosmos.sql
 
+psql -U postgres -d bdjuno -f 01-auth.sql

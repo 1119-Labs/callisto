@@ -1,19 +1,20 @@
 version: '3.6'
 services:
 
-  # hasura:
-  #   image: hasura/graphql-engine:v2.40.0
-  #   platform: linux/arm64
-  #   ports:
-  #     - "8080:8080"
-  #   restart: always
-  #   environment:
-  #     HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:5432/${POSTGRES_DB}
-  #     HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-  #     HASURA_GRAPHQL_DEV_MODE: "true"
-  #     HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
+  hasura:
+    image: hasura/graphql-engine:v2.40.0
+    platform: linux/arm64
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${DB_PORT}/${POSTGRES_DB}
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   callisto:
     build:

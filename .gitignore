@@ -10,5 +10,5 @@ config.yaml
 # Coverage
 coverage.*
 
-# env
+# Environment files
 .env

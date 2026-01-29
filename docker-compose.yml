@@ -1,6 +1,16 @@
 version: '3.6'
 services:
-
+  postgres:
+    image: postgres:16-alpine
+    container_name: faucet-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-backend}
+    ports:
+      - 5432:5432
+    volumes:
+      - ../postgres_data:/var/lib/postgresql/data
   hasura:
     image: hasura/graphql-engine:v2.40.0
     container_name: harusa-explorer
@@ -15,7 +25,7 @@ services:
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
+  
   callisto:
     build:
       context: ..

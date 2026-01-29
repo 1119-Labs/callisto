@@ -5,7 +5,7 @@ services:
     image: hasura/graphql-engine:v2.40.0
     container_name: harusa-explorer
     ports:
-      - "8080:8080"
+      - 9005:8080
     restart: always
     environment:
       HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${DB_PORT}/${POSTGRES_DB}

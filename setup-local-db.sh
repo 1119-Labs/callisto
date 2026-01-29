@@ -8,18 +8,31 @@ set -e
 echo "Setting up local PostgreSQL for Callisto..."
 
 # Load environment variables
-export $(cat .env | xargs)
+if [ -f .env ]; then
+    export $(cat .env | xargs)
+fi
 
 # Database connection string
-DB_HOST="localhost"
-DB_PORT="5432"
+DB_HOST="${DB_HOST:-localhost}"
+DB_PORT="${DB_PORT:-5432}"
+
+# If no password was provided, try without one
 
 echo "Creating database '${POSTGRES_DB}' if it doesn't exist..."
-psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -tc "SELECT 1 FROM pg_database WHERE datname = '${POSTGRES_DB}'" | grep -q 1 || \
-    psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -c "CREATE DATABASE ${POSTGRES_DB};"
+if [ -n "${POSTGRES_PASSWORD}" ]; then
+    PGPASSWORD="$POSTGRES_PASSWORD" psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${POSTGRES_DB}'" | grep -q 1 || \
+            PGPASSWORD="$POSTGRES_PASSWORD" psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -d postgres -c "CREATE DATABASE ${POSTGRES_DB};"
+else
+    psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${POSTGRES_DB}'" | grep -q 1 || \
+            psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -d postgres -c "CREATE DATABASE ${POSTGRES_DB};"
+fi
 
 echo "Applying database schema..."
-psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f database/schema/schema.sql
+if [ -n "${POSTGRES_PASSWORD}" ]; then
+    PGPASSWORD="$POSTGRES_PASSWORD" psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f database/schema/schema.sql
+else
+    psql -h $DB_HOST -p $DB_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f database/schema/schema.sql
+fi
 
 echo "✅ Database setup complete!"
 echo ""

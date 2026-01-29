@@ -3,6 +3,7 @@ services:
 
   hasura:
     image: hasura/graphql-engine:v2.40.0
+    container_name: harusa-explorer
     ports:
       - "8080:8080"
     restart: always
@@ -19,6 +20,7 @@ services:
     build:
       context: ..
       dockerfile: callisto/Dockerfile
+    container_name: backend-explorer
     restart: unless-stopped
     command: callisto start --home /callisto/.callisto
     volumes:

@@ -3,7 +3,6 @@ services:
 
   hasura:
     image: hasura/graphql-engine:v2.40.0
-    platform: linux/arm64
     ports:
       - "8080:8080"
     restart: always

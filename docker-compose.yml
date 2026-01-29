@@ -20,7 +20,7 @@ services:
     build:
       context: ..
       dockerfile: callisto/Dockerfile
-    container_name: backend-explorer
+    container_name: callisto-explorer
     restart: unless-stopped
     command: callisto start --home /callisto/.callisto
     volumes:

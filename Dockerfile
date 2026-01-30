@@ -1,7 +1,5 @@
 FROM golang:1.22-alpine AS builder
 RUN apk update && apk add --no-cache make git
-WORKDIR /go/src/github.com/forbole
-COPY juno ./juno
 WORKDIR /go/src/github.com/forbole/callisto
 COPY callisto ./
 RUN go mod download

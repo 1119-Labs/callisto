@@ -3,6 +3,7 @@ RUN apk update && apk add --no-cache make git
 WORKDIR /go/src/github.com/forbole/callisto
 COPY callisto ./
 RUN go mod download
+RUN go mod tidy
 RUN make build
 
 FROM alpine:latest

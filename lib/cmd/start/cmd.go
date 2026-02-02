@@ -76,20 +76,20 @@ func startParsing(ctx *parser.Context) error {
 	queueCfg := config.Cfg.Queue.RabbitMQ
 
 	// Create a publisher queue
-	publisherQueue, err := queue.NewRabbitMQHeightQueue(queueCfg)
+	publisherQueueConnection, err := queue.ConnectRabbitMQ(queueCfg)
 	if err != nil {
 		return err
 	}
 
 	// Create workers, each with its own queue consumer
 	workers := make([]parser.Worker, cfg.Workers)
-	workerQueues := make([]types.HeightQueue, cfg.Workers)
+	workerQueuesConnections := make([]types.HeightQueue, cfg.Workers)
 	for i := range workers {
-		workerQueue, err := queue.NewRabbitMQHeightQueue(queueCfg)
+		workerQueue, err := queue.ConnectRabbitMQ(queueCfg)
 		if err != nil {
 			return err
 		}
-		workerQueues[i] = workerQueue
+		workerQueuesConnections[i] = workerQueue
 		workers[i] = parser.NewWorker(ctx, workerQueue, i)
 	}
 
@@ -110,21 +110,21 @@ func startParsing(ctx *parser.Context) error {
 	}
 
 	// Listen for and trap any OS signal to gracefully shutdown and exit
-	trapSignal(ctx, append(workerQueues, publisherQueue)...)
+	trapSignal(ctx, append(workerQueuesConnections, publisherQueueConnection)...)
 
 	if cfg.ParseGenesis {
 		// Add the genesis to the queue if requested
-		if err := publisherQueue.Publish(0); err != nil {
+		if err := publisherQueueConnection.Publish(0); err != nil {
 			return err
 		}
 	}
 
 	if cfg.ParseOldBlocks {
-		go enqueueMissingBlocks(publisherQueue, ctx)
+		go enqueueMissingBlocks(publisherQueueConnection, ctx)
 	}
 
 	if cfg.ParseNewBlocks {
-		go enqueueNewBlocks(publisherQueue, ctx)
+		go enqueueNewBlocks(publisherQueueConnection, ctx)
 	}
 
 	// Block main process (signal capture will call WaitGroup's Done)

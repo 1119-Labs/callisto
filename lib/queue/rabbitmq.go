@@ -19,8 +19,8 @@ type RabbitMQHeightQueue struct {
 	queueName string
 }
 
-// NewRabbitMQHeightQueue creates a RabbitMQ-backed queue using the provided configuration.
-func NewRabbitMQHeightQueue(cfg config.RabbitMQConfig) (types.HeightQueue, error) {
+// ConnectRabbitMQ creates a new RabbitMQ connection and returns a HeightQueue.
+func ConnectRabbitMQ(cfg config.RabbitMQConfig) (types.HeightQueue, error) {
 	if cfg.URL == "" {
 		return nil, fmt.Errorf("rabbitmq url is empty")
 	}

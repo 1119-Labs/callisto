@@ -342,4 +342,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/forbole/juno/v6 => github.com/1119-Labs/juno/v6 v6.0.0-20260130034626-662f18fddd8b
+replace github.com/forbole/juno/v6 => ./lib

@@ -12,3 +12,6 @@ coverage.*
 
 # Environment files
 .env
+
+.DS_Store
+Thumbs.db

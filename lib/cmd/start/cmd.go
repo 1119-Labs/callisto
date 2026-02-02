@@ -7,19 +7,19 @@ import (
 	"syscall"
 	"time"
 
-	parsecmdtypes "github.com/forbole/juno/v6/cmd/parse/types"
-	"github.com/forbole/juno/v6/modules"
-	"github.com/forbole/juno/v6/types/utils"
+	parsecmdtypes "github.com/1119-Labs/callisto/v4/lib/cmd/parse/types"
+	"github.com/1119-Labs/callisto/v4/lib/modules"
+	"github.com/1119-Labs/callisto/v4/lib/types/utils"
 
-	"github.com/forbole/juno/v6/logging"
+	"github.com/1119-Labs/callisto/v4/lib/logging"
 
-	"github.com/forbole/juno/v6/types/config"
-	"github.com/forbole/juno/v6/queue"
-	"github.com/forbole/juno/v6/types"
+	"github.com/1119-Labs/callisto/v4/lib/queue"
+	"github.com/1119-Labs/callisto/v4/lib/types"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 
 	"github.com/go-co-op/gocron"
 
-	"github.com/forbole/juno/v6/parser"
+	"github.com/1119-Labs/callisto/v4/lib/parser"
 
 	"github.com/spf13/cobra"
 )

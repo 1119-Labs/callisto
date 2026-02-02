@@ -9,15 +9,15 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	"github.com/forbole/juno/v6/logging"
+	"github.com/1119-Labs/callisto/v4/lib/logging"
 
 	"github.com/lib/pq"
 
-	"github.com/forbole/juno/v6/database"
-	"github.com/forbole/juno/v6/types"
-	"github.com/forbole/juno/v6/types/config"
-	"github.com/forbole/juno/v6/types/env"
-	"github.com/forbole/juno/v6/types/utils"
+	"github.com/1119-Labs/callisto/v4/lib/database"
+	"github.com/1119-Labs/callisto/v4/lib/types"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
+	"github.com/1119-Labs/callisto/v4/lib/types/env"
+	"github.com/1119-Labs/callisto/v4/lib/types/utils"
 )
 
 // Builder creates a database connection with the given database connection info

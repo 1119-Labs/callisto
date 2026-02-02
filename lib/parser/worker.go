@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/forbole/juno/v6/logging"
+	"github.com/1119-Labs/callisto/v4/lib/logging"
 
-	"github.com/forbole/juno/v6/database"
-	"github.com/forbole/juno/v6/types/config"
+	"github.com/1119-Labs/callisto/v4/lib/database"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 
-	"github.com/forbole/juno/v6/modules"
+	"github.com/1119-Labs/callisto/v4/lib/modules"
 
 	tmctypes "github.com/cometbft/cometbft/rpc/core/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/forbole/juno/v6/node"
-	"github.com/forbole/juno/v6/types"
-	"github.com/forbole/juno/v6/types/utils"
+	"github.com/1119-Labs/callisto/v4/lib/node"
+	"github.com/1119-Labs/callisto/v4/lib/types"
+	"github.com/1119-Labs/callisto/v4/lib/types/utils"
 )
 
 // Worker defines a job consumer that is responsible for getting and

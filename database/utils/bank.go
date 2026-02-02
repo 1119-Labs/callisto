@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/forbole/callisto/v4/types"
+import "github.com/1119-Labs/callisto/v4/types"
 
 const (
 	maxPostgreSQLParams = 65535

@@ -8,8 +8,8 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
-	"github.com/forbole/juno/v6/types"
-	"github.com/forbole/juno/v6/types/config"
+	"github.com/1119-Labs/callisto/v4/lib/types"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 )
 
 // RabbitMQHeightQueue implements HeightQueue using RabbitMQ.

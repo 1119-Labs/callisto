@@ -7,10 +7,10 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/rs/zerolog/log"
 
-	"github.com/forbole/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/types"
 
-	"github.com/forbole/callisto/v4/modules/pricefeed/coingecko"
-	"github.com/forbole/callisto/v4/modules/utils"
+	"github.com/1119-Labs/callisto/v4/modules/pricefeed/coingecko"
+	"github.com/1119-Labs/callisto/v4/modules/utils"
 )
 
 // RegisterPeriodicOperations implements modules.PeriodicOperationsModule

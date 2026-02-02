@@ -8,17 +8,17 @@ import (
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 
-	"github.com/forbole/callisto/v4/types"
-	"github.com/forbole/callisto/v4/utils"
+	"github.com/1119-Labs/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/utils"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govtypesv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	juno "github.com/forbole/juno/v6/types"
+	juno "github.com/1119-Labs/callisto/v4/lib/types"
 
-	eventutils "github.com/forbole/callisto/v4/utils/events"
+	eventutils "github.com/1119-Labs/callisto/v4/utils/events"
 )
 
 var msgFilter = map[string]bool{

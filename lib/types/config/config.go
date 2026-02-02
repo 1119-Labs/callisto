@@ -5,10 +5,10 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	databaseconfig "github.com/forbole/juno/v6/database/config"
-	loggingconfig "github.com/forbole/juno/v6/logging/config"
-	nodeconfig "github.com/forbole/juno/v6/node/config"
-	parserconfig "github.com/forbole/juno/v6/parser/config"
+	databaseconfig "github.com/1119-Labs/callisto/v4/lib/database/config"
+	loggingconfig "github.com/1119-Labs/callisto/v4/lib/logging/config"
+	nodeconfig "github.com/1119-Labs/callisto/v4/lib/node/config"
+	parserconfig "github.com/1119-Labs/callisto/v4/lib/parser/config"
 )
 
 var (

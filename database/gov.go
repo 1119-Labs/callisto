@@ -11,8 +11,8 @@ import (
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/lib/pq"
 
-	dbtypes "github.com/forbole/callisto/v4/database/types"
-	"github.com/forbole/callisto/v4/types"
+	dbtypes "github.com/1119-Labs/callisto/v4/database/types"
+	"github.com/1119-Labs/callisto/v4/types"
 )
 
 // SaveGovParams saves the given x/gov parameters inside the database

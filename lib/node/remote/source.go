@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/forbole/juno/v6/node"
+	"github.com/1119-Labs/callisto/v4/lib/node"
 )
 
 var (

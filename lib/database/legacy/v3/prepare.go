@@ -3,7 +3,7 @@ package v3
 import (
 	"fmt"
 
-	"github.com/forbole/juno/v6/types/config"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 )
 
 // PrepareMigration prepares the database for the migration by renaming the old tables and creating the new ones

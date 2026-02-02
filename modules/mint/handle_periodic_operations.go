@@ -1,7 +1,7 @@
 package mint
 
 import (
-	"github.com/forbole/callisto/v4/modules/utils"
+	"github.com/1119-Labs/callisto/v4/modules/utils"
 
 	"github.com/go-co-op/gocron"
 	"github.com/rs/zerolog/log"

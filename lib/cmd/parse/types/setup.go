@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/forbole/juno/v6/parser"
+	"github.com/1119-Labs/callisto/v4/lib/parser"
 
-	nodebuilder "github.com/forbole/juno/v6/node/builder"
-	"github.com/forbole/juno/v6/types/config"
+	nodebuilder "github.com/1119-Labs/callisto/v4/lib/node/builder"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 
-	"github.com/forbole/juno/v6/database"
+	"github.com/1119-Labs/callisto/v4/lib/database"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	modsregistrar "github.com/forbole/juno/v6/modules/registrar"
+	modsregistrar "github.com/1119-Labs/callisto/v4/lib/modules/registrar"
 )
 
 // GetParserContext setups all the things that can be used to later parse the chain state

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/forbole/callisto/v4/modules/actions/logging"
+	"github.com/1119-Labs/callisto/v4/modules/actions/logging"
 
 	"github.com/rs/zerolog/log"
 )

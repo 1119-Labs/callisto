@@ -2,9 +2,9 @@ package remote
 
 import (
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	"github.com/forbole/juno/v6/node/remote"
+	"github.com/1119-Labs/callisto/v4/lib/node/remote"
 
-	govsource "github.com/forbole/callisto/v4/modules/gov/source"
+	govsource "github.com/1119-Labs/callisto/v4/modules/gov/source"
 )
 
 var (

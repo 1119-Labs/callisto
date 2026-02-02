@@ -1,11 +1,11 @@
 package database
 
 import (
-	"github.com/forbole/juno/v6/logging"
+	"github.com/1119-Labs/callisto/v4/lib/logging"
 
-	databaseconfig "github.com/forbole/juno/v6/database/config"
+	databaseconfig "github.com/1119-Labs/callisto/v4/lib/database/config"
 
-	"github.com/forbole/juno/v6/types"
+	"github.com/1119-Labs/callisto/v4/lib/types"
 )
 
 // Database represents an abstract database that can be used to save data inside it

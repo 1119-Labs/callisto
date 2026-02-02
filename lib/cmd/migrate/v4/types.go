@@ -1,14 +1,14 @@
 package v4
 
 import (
-	databaseconfig "github.com/forbole/juno/v6/database/config"
-	loggingconfig "github.com/forbole/juno/v6/logging/config"
-	"github.com/forbole/juno/v6/modules/pruning"
-	"github.com/forbole/juno/v6/modules/telemetry"
-	nodeconfig "github.com/forbole/juno/v6/node/config"
-	parserconfig "github.com/forbole/juno/v6/parser/config"
-	pricefeedconfig "github.com/forbole/juno/v6/pricefeed"
-	"github.com/forbole/juno/v6/types/config"
+	databaseconfig "github.com/1119-Labs/callisto/v4/lib/database/config"
+	loggingconfig "github.com/1119-Labs/callisto/v4/lib/logging/config"
+	"github.com/1119-Labs/callisto/v4/lib/modules/pruning"
+	"github.com/1119-Labs/callisto/v4/lib/modules/telemetry"
+	nodeconfig "github.com/1119-Labs/callisto/v4/lib/node/config"
+	parserconfig "github.com/1119-Labs/callisto/v4/lib/parser/config"
+	pricefeedconfig "github.com/1119-Labs/callisto/v4/lib/pricefeed"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 )
 
 // Config defines all necessary juno configuration parameters.

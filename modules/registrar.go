@@ -3,37 +3,37 @@ package modules
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 
-	"github.com/forbole/callisto/v4/modules/actions"
-	"github.com/forbole/callisto/v4/modules/types"
+	"github.com/1119-Labs/callisto/v4/modules/actions"
+	"github.com/1119-Labs/callisto/v4/modules/types"
 
-	"github.com/forbole/juno/v6/modules/pruning"
-	"github.com/forbole/juno/v6/modules/telemetry"
+	"github.com/1119-Labs/callisto/v4/lib/modules/pruning"
+	"github.com/1119-Labs/callisto/v4/lib/modules/telemetry"
 
-	"github.com/forbole/callisto/v4/modules/slashing"
+	"github.com/1119-Labs/callisto/v4/modules/slashing"
 
-	jmodules "github.com/forbole/juno/v6/modules"
-	"github.com/forbole/juno/v6/modules/messages"
-	"github.com/forbole/juno/v6/modules/registrar"
+	jmodules "github.com/1119-Labs/callisto/v4/lib/modules"
+	"github.com/1119-Labs/callisto/v4/lib/modules/messages"
+	"github.com/1119-Labs/callisto/v4/lib/modules/registrar"
 
-	"github.com/forbole/callisto/v4/utils"
+	"github.com/1119-Labs/callisto/v4/utils"
 
-	"github.com/forbole/callisto/v4/database"
-	"github.com/forbole/callisto/v4/modules/auth"
-	"github.com/forbole/callisto/v4/modules/bank"
-	"github.com/forbole/callisto/v4/modules/consensus"
-	"github.com/forbole/callisto/v4/modules/distribution"
-	"github.com/forbole/callisto/v4/modules/feegrant"
+	"github.com/1119-Labs/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/modules/auth"
+	"github.com/1119-Labs/callisto/v4/modules/bank"
+	"github.com/1119-Labs/callisto/v4/modules/consensus"
+	"github.com/1119-Labs/callisto/v4/modules/distribution"
+	"github.com/1119-Labs/callisto/v4/modules/feegrant"
 
-	juno "github.com/forbole/juno/v6/types"
+	juno "github.com/1119-Labs/callisto/v4/lib/types"
 
-	dailyrefetch "github.com/forbole/callisto/v4/modules/daily_refetch"
-	"github.com/forbole/callisto/v4/modules/gov"
-	messagetype "github.com/forbole/callisto/v4/modules/message_type"
-	"github.com/forbole/callisto/v4/modules/mint"
-	"github.com/forbole/callisto/v4/modules/modules"
-	"github.com/forbole/callisto/v4/modules/pricefeed"
-	"github.com/forbole/callisto/v4/modules/staking"
-	"github.com/forbole/callisto/v4/modules/upgrade"
+	dailyrefetch "github.com/1119-Labs/callisto/v4/modules/daily_refetch"
+	"github.com/1119-Labs/callisto/v4/modules/gov"
+	messagetype "github.com/1119-Labs/callisto/v4/modules/message_type"
+	"github.com/1119-Labs/callisto/v4/modules/mint"
+	"github.com/1119-Labs/callisto/v4/modules/modules"
+	"github.com/1119-Labs/callisto/v4/modules/pricefeed"
+	"github.com/1119-Labs/callisto/v4/modules/staking"
+	"github.com/1119-Labs/callisto/v4/modules/upgrade"
 )
 
 // UniqueAddressesParser returns a wrapper around the given parser that removes all duplicated addresses

@@ -3,9 +3,9 @@ package feegrant
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 
-	"github.com/forbole/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/database"
 
-	"github.com/forbole/juno/v6/modules"
+	"github.com/1119-Labs/callisto/v4/lib/modules"
 )
 
 var (

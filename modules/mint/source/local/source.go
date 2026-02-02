@@ -6,9 +6,9 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	"github.com/forbole/juno/v6/node/local"
+	"github.com/1119-Labs/callisto/v4/lib/node/local"
 
-	mintsource "github.com/forbole/callisto/v4/modules/mint/source"
+	mintsource "github.com/1119-Labs/callisto/v4/modules/mint/source"
 )
 
 var (

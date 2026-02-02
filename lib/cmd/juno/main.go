@@ -3,12 +3,12 @@ package main
 import (
 	"os"
 
-	"github.com/forbole/juno/v6/cmd/parse/types"
+	"github.com/1119-Labs/callisto/v4/lib/cmd/parse/types"
 
-	"github.com/forbole/juno/v6/modules/messages"
-	"github.com/forbole/juno/v6/modules/registrar"
+	"github.com/1119-Labs/callisto/v4/lib/modules/messages"
+	"github.com/1119-Labs/callisto/v4/lib/modules/registrar"
 
-	"github.com/forbole/juno/v6/cmd"
+	"github.com/1119-Labs/callisto/v4/lib/cmd"
 )
 
 func main() {

@@ -10,10 +10,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/forbole/juno/v6/database"
-	databaseconfig "github.com/forbole/juno/v6/database/config"
-	postgres "github.com/forbole/juno/v6/database/postgresql"
-	"github.com/forbole/juno/v6/logging"
+	"github.com/1119-Labs/callisto/v4/lib/database"
+	databaseconfig "github.com/1119-Labs/callisto/v4/lib/database/config"
+	postgres "github.com/1119-Labs/callisto/v4/lib/database/postgresql"
+	"github.com/1119-Labs/callisto/v4/lib/logging"
 )
 
 func TestDatabaseTestSuite(t *testing.T) {

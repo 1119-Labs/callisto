@@ -5,14 +5,14 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/forbole/juno/v6/modules"
-	"github.com/forbole/juno/v6/node"
-	"github.com/forbole/juno/v6/node/builder"
-	nodeconfig "github.com/forbole/juno/v6/node/config"
-	"github.com/forbole/juno/v6/types/config"
+	"github.com/1119-Labs/callisto/v4/lib/modules"
+	"github.com/1119-Labs/callisto/v4/lib/node"
+	"github.com/1119-Labs/callisto/v4/lib/node/builder"
+	nodeconfig "github.com/1119-Labs/callisto/v4/lib/node/config"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 	"github.com/rs/zerolog/log"
 
-	modulestypes "github.com/forbole/callisto/v4/modules/types"
+	modulestypes "github.com/1119-Labs/callisto/v4/modules/types"
 )
 
 const (

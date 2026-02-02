@@ -10,16 +10,16 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	dbconfig "github.com/forbole/juno/v6/database/config"
-	"github.com/forbole/juno/v6/logging"
+	dbconfig "github.com/1119-Labs/callisto/v4/lib/database/config"
+	"github.com/1119-Labs/callisto/v4/lib/logging"
 
-	junodb "github.com/forbole/juno/v6/database"
+	junodb "github.com/1119-Labs/callisto/v4/lib/database"
 
-	"github.com/forbole/callisto/v4/database"
-	"github.com/forbole/callisto/v4/types"
-	"github.com/forbole/callisto/v4/utils"
+	"github.com/1119-Labs/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/utils"
 
-	juno "github.com/forbole/juno/v6/types"
+	juno "github.com/1119-Labs/callisto/v4/lib/types"
 
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	tmctypes "github.com/cometbft/cometbft/rpc/core/types"

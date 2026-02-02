@@ -3,7 +3,7 @@ package init
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/forbole/juno/v6/types/config"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 )
 
 // WritableConfig represents a configuration that can be written to a file

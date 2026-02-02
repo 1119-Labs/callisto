@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	parsecmdtypes "github.com/forbole/juno/v6/cmd/parse/types"
+	parsecmdtypes "github.com/1119-Labs/callisto/v4/lib/cmd/parse/types"
 
 	"gopkg.in/yaml.v3"
 
-	v3 "github.com/forbole/juno/v6/cmd/migrate/v3"
-	databaseconfig "github.com/forbole/juno/v6/database/config"
-	"github.com/forbole/juno/v6/types/config"
+	v3 "github.com/1119-Labs/callisto/v4/lib/cmd/migrate/v3"
+	databaseconfig "github.com/1119-Labs/callisto/v4/lib/database/config"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 )
 
 // RunMigration runs the migrations from v3 to v4

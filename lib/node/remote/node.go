@@ -15,9 +15,9 @@ import (
 	constypes "github.com/cometbft/cometbft/consensus/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 
-	"github.com/forbole/juno/v6/node"
+	"github.com/1119-Labs/callisto/v4/lib/node"
 
-	"github.com/forbole/juno/v6/types"
+	"github.com/1119-Labs/callisto/v4/lib/types"
 
 	httpclient "github.com/cometbft/cometbft/rpc/client/http"
 	tmctypes "github.com/cometbft/cometbft/rpc/core/types"

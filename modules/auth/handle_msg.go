@@ -5,15 +5,15 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	juno "github.com/forbole/juno/v6/types"
+	juno "github.com/1119-Labs/callisto/v4/lib/types"
 	"github.com/rs/zerolog/log"
 
 	authttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
-	moduleutils "github.com/forbole/callisto/v4/modules/utils"
-	"github.com/forbole/callisto/v4/types"
-	"github.com/forbole/callisto/v4/utils"
+	moduleutils "github.com/1119-Labs/callisto/v4/modules/utils"
+	"github.com/1119-Labs/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/utils"
 )
 
 var msgFilter = map[string]bool{

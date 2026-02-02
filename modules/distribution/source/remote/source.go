@@ -3,9 +3,9 @@ package remote
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/forbole/juno/v6/node/remote"
+	"github.com/1119-Labs/callisto/v4/lib/node/remote"
 
-	distrsource "github.com/forbole/callisto/v4/modules/distribution/source"
+	distrsource "github.com/1119-Labs/callisto/v4/modules/distribution/source"
 )
 
 var (

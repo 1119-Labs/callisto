@@ -1,6 +1,7 @@
 package start
 
 import (
+	"io"
 	"os"
 	"os/signal"
 	"sync"
@@ -27,6 +28,11 @@ import (
 var (
 	waitGroup sync.WaitGroup
 )
+
+// Closeable interface for resources that can be closed
+type Closeable interface {
+	Close() error
+}
 
 // NewStartCmd returns the command that should be run when we want to start parsing a chain state.
 func NewStartCmd(cmdCfg *parsecmdtypes.Config) *cobra.Command {
@@ -75,22 +81,51 @@ func startParsing(ctx *parser.Context) error {
 
 	queueCfg := config.Cfg.Queue.RabbitMQ
 
-	// Create a publisher queue
-	publisherQueueConnection, err := queue.ConnectRabbitMQ(queueCfg)
+	// Track all connections for graceful shutdown
+	var allConnections []io.Closer
+
+	// -----------------------------------------------------
+	// Block Queue: Publisher for enqueueing block heights
+	// -----------------------------------------------------
+	blockPublisher, err := queue.ConnectBlockQueue(queueCfg)
 	if err != nil {
 		return err
 	}
+	allConnections = append(allConnections, blockPublisher)
 
-	// Create workers, each with its own queue consumer
-	workers := make([]parser.Worker, cfg.Workers)
-	workerQueuesConnections := make([]types.HeightQueue, cfg.Workers)
-	for i := range workers {
-		workerQueue, err := queue.ConnectRabbitMQ(queueCfg)
+	// -----------------------------------------------------
+	// Block Workers: Consume block heights, save block data, publish tx hashes
+	// Each block worker gets its own tx queue publisher (channels aren't thread-safe)
+	// -----------------------------------------------------
+	blockWorkers := make([]parser.BlockWorker, cfg.BlockWorkers)
+	for i := range blockWorkers {
+		blockConsumer, err := queue.ConnectBlockQueue(queueCfg)
 		if err != nil {
 			return err
 		}
-		workerQueuesConnections[i] = workerQueue
-		workers[i] = parser.NewWorker(ctx, workerQueue, i)
+		allConnections = append(allConnections, blockConsumer)
+
+		// Each block worker gets its own tx publisher connection
+		txPublisher, err := queue.ConnectTxQueue(queueCfg)
+		if err != nil {
+			return err
+		}
+		allConnections = append(allConnections, txPublisher)
+
+		blockWorkers[i] = parser.NewBlockWorker(ctx, blockConsumer, txPublisher, int(i))
+	}
+
+	// -----------------------------------------------------
+	// Tx Workers: Consume tx hashes, fetch tx details, save to DB
+	// -----------------------------------------------------
+	txWorkers := make([]parser.TxWorker, cfg.TxWorkers)
+	for i := range txWorkers {
+		txConsumer, err := queue.ConnectTxQueue(queueCfg)
+		if err != nil {
+			return err
+		}
+		allConnections = append(allConnections, txConsumer)
+		txWorkers[i] = parser.NewTxWorker(ctx, txConsumer, int(i))
 	}
 
 	waitGroup.Add(1)
@@ -102,29 +137,34 @@ func startParsing(ctx *parser.Context) error {
 		}
 	}
 
-	// Start each blocking worker in a go-routine where the worker consumes jobs
-	// off of the export queue.
-	for i, w := range workers {
-		ctx.Logger.Debug("starting worker...", "number", i+1)
+	// Start block workers
+	for i, w := range blockWorkers {
+		ctx.Logger.Debug("starting block worker...", "number", i+1)
+		go w.Start()
+	}
+
+	// Start tx workers
+	for i, w := range txWorkers {
+		ctx.Logger.Debug("starting tx worker...", "number", i+1)
 		go w.Start()
 	}
 
 	// Listen for and trap any OS signal to gracefully shutdown and exit
-	trapSignal(ctx, append(workerQueuesConnections, publisherQueueConnection)...)
+	trapSignal(ctx, allConnections)
 
 	if cfg.ParseGenesis {
 		// Add the genesis to the queue if requested
-		if err := publisherQueueConnection.Publish(0); err != nil {
+		if err := blockPublisher.Publish(0); err != nil {
 			return err
 		}
 	}
 
 	if cfg.ParseOldBlocks {
-		go enqueueMissingBlocks(publisherQueueConnection, ctx)
+		go enqueueMissingBlocks(blockPublisher, ctx)
 	}
 
 	if cfg.ParseNewBlocks {
-		go enqueueNewBlocks(publisherQueueConnection, ctx)
+		go enqueueNewBlocks(blockPublisher, ctx)
 	}
 
 	// Block main process (signal capture will call WaitGroup's Done)
@@ -221,7 +261,7 @@ func mustGetLatestHeight(ctx *parser.Context) int64 {
 
 // trapSignal will listen for any OS signal and invoke Done on the main
 // WaitGroup allowing the main process to gracefully exit.
-func trapSignal(ctx *parser.Context, queues ...types.HeightQueue) {
+func trapSignal(ctx *parser.Context, connections []io.Closer) {
 	var sigCh = make(chan os.Signal, 1)
 
 	signal.Notify(sigCh, syscall.SIGTERM)
@@ -230,8 +270,8 @@ func trapSignal(ctx *parser.Context, queues ...types.HeightQueue) {
 	go func() {
 		sig := <-sigCh
 		ctx.Logger.Info("caught signal; shutting down...", "signal", sig.String())
-		for _, q := range queues {
-			_ = q.Close()
+		for _, conn := range connections {
+			_ = conn.Close()
 		}
 		defer ctx.Node.Stop()
 		defer ctx.Database.Close()

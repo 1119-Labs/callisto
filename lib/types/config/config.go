@@ -103,18 +103,20 @@ type QueueConfig struct {
 
 // RabbitMQConfig contains RabbitMQ connection and queue settings.
 type RabbitMQConfig struct {
-	URL       string `yaml:"url"`
-	QueueName string `yaml:"queue_name"`
-	Prefetch  int    `yaml:"prefetch"`
+	URL            string `yaml:"url"`
+	BlockQueueName string `yaml:"block_queue_name"`
+	TxQueueName    string `yaml:"tx_queue_name"`
+	Prefetch       int    `yaml:"prefetch"`
 }
 
 // DefaultQueueConfig returns the default queue configuration.
 func DefaultQueueConfig() QueueConfig {
 	return QueueConfig{
 		RabbitMQ: RabbitMQConfig{
-			URL:       "amqp://guest:guest@localhost:5672/",
-			QueueName: "callisto-block-queue",
-			Prefetch:  25,
+			URL:            "amqp://guest:guest@localhost:5672/",
+			BlockQueueName: "callisto-block-queue",
+			TxQueueName:    "callisto-tx-queue",
+			Prefetch:       25,
 		},
 	}
 }

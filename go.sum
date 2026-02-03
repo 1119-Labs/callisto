@@ -215,6 +215,8 @@ cosmossdk.io/x/upgrade v0.1.3/go.mod h1:jOdQhnaY5B8CDUoUbed23/Lre0Dk+r6BMQE40iKl
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 filippo.io/edwards25519 v1.0.0 h1:0wAIcmJUqRdI8IJ/3eGi5/HwXZWPujYXXlkrQogz0Ek=
 filippo.io/edwards25519 v1.0.0/go.mod h1:N1IkdkCkiLB6tki+MYJoSx2JTY9NUlxZE7eHn5EwJns=
+github.com/1119-Labs/juno/v6 v6.0.0-20260130034626-662f18fddd8b h1:osWsX/0XXVrurCPejJHn4KQzY1NdxR4r55OaEYKfqT8=
+github.com/1119-Labs/juno/v6 v6.0.0-20260130034626-662f18fddd8b/go.mod h1:O3o+73CiNjsIuPNWBOH3Wv59vvI5zeGfYIZBjsNj4/I=
 github.com/4meepo/tagalign v1.3.3 h1:ZsOxcwGD/jP4U/aw7qeWu58i7dwYemfy5Y+IF1ACoNw=
 github.com/4meepo/tagalign v1.3.3/go.mod h1:Q9c1rYMZJc9dPRkbQPpcBNCLEmY2njbAsXhQOZFE2dE=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 h1:/vQbFIOMbk2FiG/kXiLl8BRyzTWDw7gX/Hz7Dd5eDMs=

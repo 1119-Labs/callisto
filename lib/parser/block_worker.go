@@ -52,20 +52,20 @@ func NewBlockWorker(ctx *Context, blockQueue types.HeightQueue, txQueue types.Tx
 // Start starts the block worker by consuming from the block queue.
 func (w BlockWorker) Start() {
 	if w.blockQueue == nil {
-		w.logger.Error("block worker queue is nil")
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] block worker queue is nil", w.pipelineType, w.index))
 		return
 	}
 
 	logging.WorkerCount.Inc()
 	chainID, err := w.node.ChainID()
 	if err != nil {
-		w.logger.Error("error while getting chain ID from the node", "err", err)
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] error while getting chain ID from the node", w.pipelineType, w.index), "err", err)
 	}
 
 	err = w.blockQueue.Consume(func(height int64) error {
 		if err := w.ProcessIfNotExists(height); err != nil {
 			time.Sleep(config.GetAvgBlockTime())
-			w.logger.Error("re-enqueueing failed block", "height", height, "err", err)
+			w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] re-enqueueing failed block", w.pipelineType, w.index), "height", height, "err", err)
 			return err
 		}
 
@@ -73,7 +73,7 @@ func (w BlockWorker) Start() {
 		return nil
 	})
 	if err != nil {
-		w.logger.Error("block worker consume failed", "err", err)
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] block worker consume failed", w.pipelineType, w.index), "err", err)
 	}
 }
 
@@ -85,7 +85,7 @@ func (w BlockWorker) ProcessIfNotExists(height int64) error {
 	}
 
 	if exists {
-		w.logger.Debug("skipping already exported block", "height", height)
+		w.logger.Debug(fmt.Sprintf("[BlockWorker-%s-%d] skipping already exported block", w.pipelineType, w.index), "height", height)
 		return nil
 	}
 
@@ -103,7 +103,7 @@ func (w BlockWorker) Process(height int64) error {
 		return w.HandleGenesis(genesisDoc, genesisState)
 	}
 
-	w.logger.Debug("processing block", "height", height)
+	w.logger.Debug(fmt.Sprintf("[BlockWorker-%s-%d] processing block", w.pipelineType, w.index), "height", height)
 
 	block, err := w.node.Block(height)
 	if err != nil {
@@ -122,13 +122,13 @@ func (w BlockWorker) Process(height int64) error {
 
 	// Publish tx hashes to tx queue FIRST (so tx workers can start processing early)
 	// This allows tx workers to fetch tx details in parallel while we save block data
-	fmt.Printf("[BlockWorker-%d] Block %d has %d transactions\n", w.index, height, len(block.Block.Txs))
+	fmt.Printf("[BlockWorker-%s-%d] Block %d has %d transactions\n", w.pipelineType, w.index, height, len(block.Block.Txs))
 	for i, tx := range block.Block.Txs {
 		if i > 0 {
 			txHash := fmt.Sprintf("%X", tx.Hash())
-			fmt.Printf("[BlockWorker-%d] Publishing tx to queue: hash=%s, height=%d\n", w.index, txHash, height)
+			fmt.Printf("[BlockWorker-%s-%d] Publishing tx to queue: hash=%s, height=%d\n", w.pipelineType, w.index, txHash, height)
 			if err := w.txQueue.Publish(txHash, height); err != nil {
-				w.logger.Error("failed to publish tx to queue", "tx_hash", txHash, "height", height, "err", err)
+				w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] failed to publish tx to queue", w.pipelineType, w.index), "tx_hash", txHash, "height", height, "err", err)
 			}
 		}
 

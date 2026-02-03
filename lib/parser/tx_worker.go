@@ -19,8 +19,9 @@ type TxWorker struct {
 	index        int
 	pipelineType string // "new" or "old"
 
-	txQueue types.TxQueue
-	modules []modules.Module
+	txQueue          types.TxQueue
+	modules          []modules.Module
+	addressExtractor *AddressExtractor
 
 	node   node.Node
 	db     database.Database
@@ -31,39 +32,40 @@ type TxWorker struct {
 // pipelineType should be "new" for real-time txs or "old" for backfill/missing txs.
 func NewTxWorker(ctx *Context, txQueue types.TxQueue, index int, pipelineType string) TxWorker {
 	return TxWorker{
-		index:        index,
-		pipelineType: pipelineType,
-		node:         ctx.Node,
-		txQueue:      txQueue,
-		db:           ctx.Database,
-		modules:      ctx.Modules,
-		logger:       ctx.Logger,
+		index:            index,
+		pipelineType:     pipelineType,
+		node:             ctx.Node,
+		txQueue:          txQueue,
+		db:               ctx.Database,
+		modules:          ctx.Modules,
+		logger:           ctx.Logger,
+		addressExtractor: NewAddressExtractor(),
 	}
 }
 
 // Start starts the tx worker by consuming from the tx queue.
 func (w TxWorker) Start() {
 	if w.txQueue == nil {
-		w.logger.Error("tx worker queue is nil")
+		w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] tx worker queue is nil", w.pipelineType, w.index))
 		return
 	}
 
-	fmt.Printf("[TxWorker-%d] Starting tx worker\n", w.index)
+	fmt.Printf("[TxWorker-%s-%d] Starting tx worker\n", w.pipelineType, w.index)
 
 	logging.WorkerCount.Inc()
 	chainID, err := w.node.ChainID()
 	if err != nil {
-		w.logger.Error("error while getting chain ID from the node", "err", err)
+		w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] error while getting chain ID from the node", w.pipelineType, w.index), "err", err)
 	}
 
-	fmt.Printf("[TxWorker-%d] Waiting for messages from tx queue...\n", w.index)
+	fmt.Printf("[TxWorker-%s-%d] Waiting for messages from tx queue...\n", w.pipelineType, w.index)
 
 	err = w.txQueue.Consume(func(txHash string, height int64) error {
-		fmt.Printf("[TxWorker-%d] Received tx from queue: hash=%s, height=%d\n", w.index, txHash, height)
+		fmt.Printf("[TxWorker-%s-%d] Received tx from queue: hash=%s, height=%d\n", w.pipelineType, w.index, txHash, height)
 
 		if err := w.ProcessTx(txHash, height); err != nil {
 			time.Sleep(config.GetAvgBlockTime())
-			w.logger.Error("re-enqueueing failed tx", "tx_hash", txHash, "height", height, "err", err)
+			w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] re-enqueueing failed tx", w.pipelineType, w.index), "tx_hash", txHash, "height", height, "err", err)
 			return err
 		}
 
@@ -71,13 +73,13 @@ func (w TxWorker) Start() {
 		return nil
 	})
 	if err != nil {
-		w.logger.Error("tx worker consume failed", "err", err)
+		w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] tx worker consume failed", w.pipelineType, w.index), "err", err)
 	}
 }
 
 // ProcessTx fetches a transaction by hash and processes it.
 func (w TxWorker) ProcessTx(txHash string, height int64) error {
-	w.logger.Debug("processing tx", "tx_hash", txHash, "height", height)
+	w.logger.Debug(fmt.Sprintf("[TxWorker-%s-%d] processing tx", w.pipelineType, w.index), "tx_hash", txHash, "height", height)
 
 	// Fetch the transaction from the node
 	tx, err := w.node.Tx(txHash)
@@ -85,9 +87,25 @@ func (w TxWorker) ProcessTx(txHash string, height int64) error {
 		return fmt.Errorf("failed to get tx from node: %s", err)
 	}
 
+	// Extract all involved accounts from the transaction using the registry-based extractor
+	accounts := w.addressExtractor.ExtractFromTx(tx)
+	w.logger.Debug(fmt.Sprintf("[TxWorker-%s-%d] extracted accounts from tx", w.pipelineType, w.index), "tx_hash", txHash, "accounts", accounts, "msg_count", len(tx.Tx.Body.Messages))
+
+	// Save accounts first (they need to exist before we can reference them)
+	if err := w.db.SaveAccounts(accounts); err != nil {
+		w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] failed to save accounts", w.pipelineType, w.index), "tx_hash", txHash, "err", err)
+		// Don't fail the transaction processing for account saving errors
+	}
+
 	// Save the transaction
 	if err := w.saveTx(tx); err != nil {
 		return err
+	}
+
+	// Save transaction-account relationships
+	if err := w.db.SaveTxAccounts(tx.TxHash, int64(tx.Height), accounts); err != nil {
+		w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] failed to save tx-account relationships", w.pipelineType, w.index), "tx_hash", txHash, "err", err)
+		// Don't fail the transaction processing for relationship saving errors
 	}
 
 	// Call tx handlers
@@ -151,14 +169,14 @@ func (w TxWorker) handleMessage(index int, msg types.Message, tx *types.Transact
 
 			err := json.Unmarshal(msg.GetBytes(), &msgExec)
 			if err != nil {
-				w.logger.Error("unable to unmarshal MsgExec inner messages", "error", err)
+				w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] unable to unmarshal MsgExec inner messages", w.pipelineType, w.index), "error", err)
 				return
 			}
 
 			for authzIndex, msgAny := range msgExec.Msgs {
 				executedMsg, err := types.UnmarshalMessage(authzIndex, msgAny)
 				if err != nil {
-					w.logger.Error("unable to unpack MsgExec inner message", "index", authzIndex, "error", err)
+					w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] unable to unpack MsgExec inner message", w.pipelineType, w.index), "index", authzIndex, "error", err)
 				}
 
 				for _, module := range w.modules {

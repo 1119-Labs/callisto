@@ -22,7 +22,8 @@ import (
 // It fetches block data via RPC, saves block/consensus info to DB,
 // and publishes transaction hashes to the tx queue.
 type BlockWorker struct {
-	index int
+	index        int
+	pipelineType string // "new" or "old"
 
 	blockQueue types.HeightQueue
 	txQueue    types.TxQueue
@@ -34,15 +35,17 @@ type BlockWorker struct {
 }
 
 // NewBlockWorker creates a new BlockWorker instance.
-func NewBlockWorker(ctx *Context, blockQueue types.HeightQueue, txQueue types.TxQueue, index int) BlockWorker {
+// pipelineType should be "new" for real-time blocks or "old" for backfill/missing blocks.
+func NewBlockWorker(ctx *Context, blockQueue types.HeightQueue, txQueue types.TxQueue, index int, pipelineType string) BlockWorker {
 	return BlockWorker{
-		index:      index,
-		node:       ctx.Node,
-		blockQueue: blockQueue,
-		txQueue:    txQueue,
-		db:         ctx.Database,
-		modules:    ctx.Modules,
-		logger:     ctx.Logger,
+		index:        index,
+		pipelineType: pipelineType,
+		node:         ctx.Node,
+		blockQueue:   blockQueue,
+		txQueue:      txQueue,
+		db:           ctx.Database,
+		modules:      ctx.Modules,
+		logger:       ctx.Logger,
 	}
 }
 

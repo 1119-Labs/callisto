@@ -191,8 +191,8 @@ func (cp *Node) BlockResults(height int64) (*tmctypes.ResultBlockResults, error)
 // Tx implements node.Node
 func (cp *Node) Tx(hash string) (*types.Transaction, error) {
 	resp, err := http.Get(fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", cp.txServiceAPI, hash))
-	fmt.Printf("[Node.Tx[%s]] Call API to node %s\n", hash, fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", cp.txServiceAPI, hash))
-	fmt.Printf("[Node.Tx[%s]] Response: %+v\n", hash, resp)
+	// fmt.Printf("[Node.Tx[%s]] Call API to node %s\n", hash, fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", cp.txServiceAPI, hash))
+	// fmt.Printf("[Node.Tx[%s]] Response: %+v\n", hash, resp)
 
 	if err != nil {
 		return nil, err

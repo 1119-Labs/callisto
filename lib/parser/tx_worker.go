@@ -16,7 +16,8 @@ import (
 // TxWorker processes transaction hashes from the tx queue.
 // It fetches transaction details via gRPC API and saves to the database.
 type TxWorker struct {
-	index int
+	index        int
+	pipelineType string // "new" or "old"
 
 	txQueue types.TxQueue
 	modules []modules.Module
@@ -27,14 +28,16 @@ type TxWorker struct {
 }
 
 // NewTxWorker creates a new TxWorker instance.
-func NewTxWorker(ctx *Context, txQueue types.TxQueue, index int) TxWorker {
+// pipelineType should be "new" for real-time txs or "old" for backfill/missing txs.
+func NewTxWorker(ctx *Context, txQueue types.TxQueue, index int, pipelineType string) TxWorker {
 	return TxWorker{
-		index:   index,
-		node:    ctx.Node,
-		txQueue: txQueue,
-		db:      ctx.Database,
-		modules: ctx.Modules,
-		logger:  ctx.Logger,
+		index:        index,
+		pipelineType: pipelineType,
+		node:         ctx.Node,
+		txQueue:      txQueue,
+		db:           ctx.Database,
+		modules:      ctx.Modules,
+		logger:       ctx.Logger,
 	}
 }
 

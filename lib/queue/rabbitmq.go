@@ -24,13 +24,13 @@ type RabbitMQHeightQueue struct {
 	queueName string
 }
 
-// ConnectBlockQueue creates a new RabbitMQ connection for the block queue.
-func ConnectBlockQueue(cfg config.RabbitMQConfig) (types.HeightQueue, error) {
+// connectHeightQueue creates a new RabbitMQ connection for a block height queue.
+func connectHeightQueue(cfg config.RabbitMQConfig, queueName string) (types.HeightQueue, error) {
 	if cfg.URL == "" {
 		return nil, fmt.Errorf("rabbitmq url is empty")
 	}
-	if cfg.BlockQueueName == "" {
-		return nil, fmt.Errorf("rabbitmq block_queue_name is empty")
+	if queueName == "" {
+		return nil, fmt.Errorf("rabbitmq queue name is empty")
 	}
 
 	conn, err := amqp.Dial(cfg.URL)
@@ -45,7 +45,7 @@ func ConnectBlockQueue(cfg config.RabbitMQConfig) (types.HeightQueue, error) {
 	}
 
 	_, err = ch.QueueDeclare(
-		cfg.BlockQueueName,
+		queueName,
 		true,  // durable
 		false, // autoDelete
 		false, // exclusive
@@ -69,8 +69,18 @@ func ConnectBlockQueue(cfg config.RabbitMQConfig) (types.HeightQueue, error) {
 	return &RabbitMQHeightQueue{
 		conn:      conn,
 		channel:   ch,
-		queueName: cfg.BlockQueueName,
+		queueName: queueName,
 	}, nil
+}
+
+// ConnectNewBlockQueue creates a new RabbitMQ connection for the new block queue (high priority).
+func ConnectNewBlockQueue(cfg config.RabbitMQConfig) (types.HeightQueue, error) {
+	return connectHeightQueue(cfg, cfg.NewBlockQueueName)
+}
+
+// ConnectOldBlockQueue creates a new RabbitMQ connection for the old block queue (backfill).
+func ConnectOldBlockQueue(cfg config.RabbitMQConfig) (types.HeightQueue, error) {
+	return connectHeightQueue(cfg, cfg.OldBlockQueueName)
 }
 
 // Publish enqueues a block height.
@@ -157,13 +167,13 @@ type RabbitMQTxQueue struct {
 	queueName string
 }
 
-// ConnectTxQueue creates a new RabbitMQ connection for the tx queue.
-func ConnectTxQueue(cfg config.RabbitMQConfig) (types.TxQueue, error) {
+// connectTxQueue creates a new RabbitMQ connection for a tx queue.
+func connectTxQueue(cfg config.RabbitMQConfig, queueName string) (types.TxQueue, error) {
 	if cfg.URL == "" {
 		return nil, fmt.Errorf("rabbitmq url is empty")
 	}
-	if cfg.TxQueueName == "" {
-		return nil, fmt.Errorf("rabbitmq tx_queue_name is empty")
+	if queueName == "" {
+		return nil, fmt.Errorf("rabbitmq queue name is empty")
 	}
 
 	conn, err := amqp.Dial(cfg.URL)
@@ -178,7 +188,7 @@ func ConnectTxQueue(cfg config.RabbitMQConfig) (types.TxQueue, error) {
 	}
 
 	_, err = ch.QueueDeclare(
-		cfg.TxQueueName,
+		queueName,
 		true,  // durable
 		false, // autoDelete
 		false, // exclusive
@@ -202,8 +212,18 @@ func ConnectTxQueue(cfg config.RabbitMQConfig) (types.TxQueue, error) {
 	return &RabbitMQTxQueue{
 		conn:      conn,
 		channel:   ch,
-		queueName: cfg.TxQueueName,
+		queueName: queueName,
 	}, nil
+}
+
+// ConnectNewTxQueue creates a new RabbitMQ connection for the new tx queue (high priority).
+func ConnectNewTxQueue(cfg config.RabbitMQConfig) (types.TxQueue, error) {
+	return connectTxQueue(cfg, cfg.NewTxQueueName)
+}
+
+// ConnectOldTxQueue creates a new RabbitMQ connection for the old tx queue (backfill).
+func ConnectOldTxQueue(cfg config.RabbitMQConfig) (types.TxQueue, error) {
+	return connectTxQueue(cfg, cfg.OldTxQueueName)
 }
 
 // Publish enqueues a transaction hash with its block height.

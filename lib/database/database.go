@@ -50,6 +50,15 @@ type Database interface {
 	// An error is returned if the operation fails.
 	SaveMessage(height int64, txHash string, msg types.Message, addresses []string) error
 
+	// SaveAccounts stores a list of accounts if they do not already exist.
+	// An error is returned if the operation fails.
+	SaveAccounts(addresses []string) error
+
+	// SaveTxAccounts stores the relationship between a transaction and its involved accounts.
+	// This enables querying transactions by account address.
+	// An error is returned if the operation fails.
+	SaveTxAccounts(txHash string, height int64, addresses []string) error
+
 	// Close closes the connection to the database
 	Close()
 }

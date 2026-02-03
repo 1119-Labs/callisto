@@ -307,6 +307,88 @@ ON CONFLICT (transaction_hash, height, index, partition_id) DO UPDATE
 	return err
 }
 
+// SaveAccounts implements database.Database
+// It stores a list of account addresses if they do not already exist.
+func (db *Database) SaveAccounts(addresses []string) error {
+	if len(addresses) == 0 {
+		return nil
+	}
+
+	// Remove duplicates
+	uniqueAddresses := make(map[string]struct{})
+	for _, addr := range addresses {
+		if addr != "" {
+			uniqueAddresses[addr] = struct{}{}
+		}
+	}
+
+	if len(uniqueAddresses) == 0 {
+		return nil
+	}
+
+	stmt := `INSERT INTO account (address) VALUES `
+	var params []interface{}
+	i := 0
+	for addr := range uniqueAddresses {
+		stmt += fmt.Sprintf("($%d),", i+1)
+		params = append(params, addr)
+		i++
+	}
+
+	stmt = stmt[:len(stmt)-1] // Remove trailing comma
+	stmt += " ON CONFLICT DO NOTHING"
+
+	_, err := db.SQL.Exec(stmt, params...)
+	return err
+}
+
+// SaveTxAccounts implements database.Database
+// It stores the relationship between a transaction and its involved accounts.
+func (db *Database) SaveTxAccounts(txHash string, height int64, addresses []string) error {
+	if len(addresses) == 0 {
+		return nil
+	}
+
+	// Calculate partition ID
+	var partitionID int64
+	partitionSize := config.Cfg.Database.PartitionSize
+	if partitionSize > 0 {
+		partitionID = height / partitionSize
+		err := db.CreatePartitionIfNotExists("transaction_account", partitionID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Remove duplicates
+	uniqueAddresses := make(map[string]struct{})
+	for _, addr := range addresses {
+		if addr != "" {
+			uniqueAddresses[addr] = struct{}{}
+		}
+	}
+
+	if len(uniqueAddresses) == 0 {
+		return nil
+	}
+
+	stmt := `INSERT INTO transaction_account (transaction_hash, account_address, height, partition_id) VALUES `
+	var params []interface{}
+	i := 0
+	for addr := range uniqueAddresses {
+		paramOffset := i * 4
+		stmt += fmt.Sprintf("($%d, $%d, $%d, $%d),", paramOffset+1, paramOffset+2, paramOffset+3, paramOffset+4)
+		params = append(params, txHash, addr, height, partitionID)
+		i++
+	}
+
+	stmt = stmt[:len(stmt)-1] // Remove trailing comma
+	stmt += " ON CONFLICT DO NOTHING"
+
+	_, err := db.SQL.Exec(stmt, params...)
+	return err
+}
+
 // Close implements database.Database
 func (db *Database) Close() {
 	err := db.SQL.Close()

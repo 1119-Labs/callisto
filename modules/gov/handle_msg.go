@@ -126,7 +126,7 @@ func (m *Module) handleSubmitProposalEvent(tx *juno.Transaction, proposer string
 		}
 	}
 
-	err = m.db.SaveAccounts(addresses)
+	err = m.db.SaveAccountsFromTypes(addresses)
 	if err != nil {
 		return fmt.Errorf("error while storing proposal recipient: %s", err)
 	}

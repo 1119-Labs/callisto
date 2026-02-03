@@ -111,7 +111,7 @@ INSERT INTO proposal(
 	}
 
 	// Store the proposers accounts
-	err := db.SaveAccounts(accounts)
+	err := db.SaveAccountsFromTypes(accounts)
 	if err != nil {
 		return fmt.Errorf("error while storing proposers accounts: %s", err)
 	}
@@ -243,7 +243,7 @@ func (db *Db) SaveDeposits(deposits []types.Deposit) error {
 	}
 
 	// Store depositors accounts
-	err := db.SaveAccounts(accounts)
+	err := db.SaveAccountsFromTypes(accounts)
 	if err != nil {
 		return fmt.Errorf("error while storing depositors accounts: %s", err)
 	}
@@ -277,7 +277,7 @@ ON CONFLICT ON CONSTRAINT unique_vote DO UPDATE
 WHERE proposal_vote.height <= excluded.height`
 
 	// Store the voter account
-	err := db.SaveAccounts([]types.Account{types.NewAccount(vote.Voter)})
+	err := db.SaveAccountsFromTypes([]types.Account{types.NewAccount(vote.Voter)})
 	if err != nil {
 		return fmt.Errorf("error while storing voter account: %s", err)
 	}

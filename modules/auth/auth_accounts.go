@@ -54,5 +54,5 @@ func (m *Module) RefreshAccounts(height int64, addresses []string) error {
 		return nil
 	}
 	accounts := GetAccounts(height, addresses)
-	return m.db.SaveAccounts(accounts)
+	return m.db.SaveAccountsFromTypes(accounts)
 }

@@ -13,7 +13,7 @@ func (db *Db) SaveFeeGrantAllowance(allowance types.FeeGrant) error {
 	// Store the accounts
 	var accounts []types.Account
 	accounts = append(accounts, types.NewAccount(allowance.Granter), types.NewAccount(allowance.Grantee))
-	err := db.SaveAccounts(accounts)
+	err := db.SaveAccountsFromTypes(accounts)
 	if err != nil {
 		return fmt.Errorf("error while storing fee grant allowance accounts: %s", err)
 	}

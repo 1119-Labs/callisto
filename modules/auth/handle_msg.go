@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	juno "github.com/1119-Labs/callisto/v4/lib/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rs/zerolog/log"
 
 	authttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -65,7 +65,7 @@ func (m *Module) handleMsgCreateVestingAccount(msg *vestingtypes.MsgCreateVestin
 	}
 
 	// store account in database
-	err = m.db.SaveAccounts([]types.Account{types.NewAccount(accAddress.String())})
+	err = m.db.SaveAccountsFromTypes([]types.Account{types.NewAccount(accAddress.String())})
 	if err != nil {
 		return fmt.Errorf("error while storing vesting account: %s", err)
 	}

@@ -11,7 +11,10 @@ services:
       - 5433:5432
     volumes:
       - ../postgres_data:/var/lib/postgresql/data
-  
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 300m
   rabbitmq:
     image: rabbitmq:3.8-management
     container_name: rabbitmq-explorer
@@ -24,6 +27,12 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ../rabbitmq_data:/var/lib/rabbitmq
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 300m
 
   hasura:
     image: hasura/graphql-engine:v2.40.0
@@ -39,7 +48,10 @@ services:
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-  
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 300m
   callisto:
     build:
       context: ..
@@ -53,3 +65,7 @@ services:
       - default
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 300m

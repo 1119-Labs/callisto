@@ -9,14 +9,27 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/lib/pq"
 
-	dbtypes "github.com/forbole/callisto/v4/database/types"
-	dbutils "github.com/forbole/callisto/v4/database/utils"
+	dbtypes "github.com/1119-Labs/callisto/v4/database/types"
+	dbutils "github.com/1119-Labs/callisto/v4/database/utils"
 
-	"github.com/forbole/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/types"
 )
 
-// SaveAccounts saves the given accounts inside the database
-func (db *Db) SaveAccounts(accounts []types.Account) error {
+// SaveAccounts implements the lib/database.Database interface.
+// It saves account addresses to the database.
+func (db *Db) SaveAccounts(addresses []string) error {
+	return db.Database.SaveAccounts(addresses)
+}
+
+// SaveTxAccounts implements the lib/database.Database interface.
+// It stores the relationship between a transaction and its involved accounts.
+func (db *Db) SaveTxAccounts(txHash string, height int64, addresses []string) error {
+	return db.Database.SaveTxAccounts(txHash, height, addresses)
+}
+
+// SaveAccountsFromTypes saves the given accounts inside the database.
+// This is used by modules that work with types.Account.
+func (db *Db) SaveAccountsFromTypes(accounts []types.Account) error {
 	paramsNumber := 1
 	slices := dbutils.SplitAccounts(accounts, paramsNumber)
 
@@ -26,7 +39,7 @@ func (db *Db) SaveAccounts(accounts []types.Account) error {
 		}
 
 		// Store up-to-date data
-		err := db.saveAccounts(paramsNumber, accounts)
+		err := db.saveAccountsFromTypes(paramsNumber, accounts)
 		if err != nil {
 			return fmt.Errorf("error while storing accounts: %s", err)
 		}
@@ -35,7 +48,7 @@ func (db *Db) SaveAccounts(accounts []types.Account) error {
 	return nil
 }
 
-func (db *Db) saveAccounts(paramsNumber int, accounts []types.Account) error {
+func (db *Db) saveAccountsFromTypes(paramsNumber int, accounts []types.Account) error {
 	if len(accounts) == 0 {
 		return nil
 	}
@@ -99,7 +112,7 @@ func (db *Db) storeVestingAccount(account exported.VestingAccount) (int, error) 
 			RETURNING id `
 
 	// Store the vesting account
-	err := db.SaveAccounts([]types.Account{types.NewAccount(account.GetAddress().String())})
+	err := db.SaveAccountsFromTypes([]types.Account{types.NewAccount(account.GetAddress().String())})
 	if err != nil {
 		return 0, fmt.Errorf("error while storing vesting account address: %s", err)
 	}
@@ -131,7 +144,7 @@ func (db *Db) StoreBaseVestingAccountFromMsg(bva *vestingtypes.BaseVestingAccoun
 			end_time = excluded.end_time`
 
 	// Store the vesting account
-	err := db.SaveAccounts([]types.Account{types.NewAccount(bva.GetAddress().String())})
+	err := db.SaveAccountsFromTypes([]types.Account{types.NewAccount(bva.GetAddress().String())})
 	if err != nil {
 		return fmt.Errorf("error while storing vesting account address: %s", err)
 	}

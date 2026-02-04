@@ -1,20 +1,20 @@
 package main
 
 import (
-	"github.com/forbole/juno/v6/cmd"
-	initcmd "github.com/forbole/juno/v6/cmd/init"
-	parsetypes "github.com/forbole/juno/v6/cmd/parse/types"
-	startcmd "github.com/forbole/juno/v6/cmd/start"
-	"github.com/forbole/juno/v6/modules/messages"
+	"github.com/1119-Labs/callisto/v4/lib/cmd"
+	initcmd "github.com/1119-Labs/callisto/v4/lib/cmd/init"
+	parsetypes "github.com/1119-Labs/callisto/v4/lib/cmd/parse/types"
+	startcmd "github.com/1119-Labs/callisto/v4/lib/cmd/start"
+	"github.com/1119-Labs/callisto/v4/lib/modules/messages"
 
-	migratecmd "github.com/forbole/callisto/v4/cmd/migrate"
-	parsecmd "github.com/forbole/callisto/v4/cmd/parse"
-	"github.com/forbole/callisto/v4/utils"
+	migratecmd "github.com/1119-Labs/callisto/v4/cmd/migrate"
+	parsecmd "github.com/1119-Labs/callisto/v4/cmd/parse"
+	"github.com/1119-Labs/callisto/v4/utils"
 
-	"github.com/forbole/callisto/v4/types/config"
+	"github.com/1119-Labs/callisto/v4/types/config"
 
-	"github.com/forbole/callisto/v4/database"
-	"github.com/forbole/callisto/v4/modules"
+	"github.com/1119-Labs/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/modules"
 )
 
 func main() {

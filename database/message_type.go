@@ -1,7 +1,7 @@
 package database
 
 import (
-	types "github.com/forbole/callisto/v4/types"
+	types "github.com/1119-Labs/callisto/v4/types"
 )
 
 // SaveMessageType stores the given message type inside the database

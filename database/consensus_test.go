@@ -3,8 +3,8 @@ package database_test
 import (
 	"time"
 
-	dbtypes "github.com/forbole/callisto/v4/database/types"
-	"github.com/forbole/callisto/v4/types"
+	dbtypes "github.com/1119-Labs/callisto/v4/database/types"
+	"github.com/1119-Labs/callisto/v4/types"
 )
 
 func (suite *DbTestSuite) TestSaveConsensus_GetBlockHeightTimeMinuteAgo() {

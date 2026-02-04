@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 
-	dbtypes "github.com/forbole/callisto/v4/database/types"
+	dbtypes "github.com/1119-Labs/callisto/v4/database/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lib/pq"

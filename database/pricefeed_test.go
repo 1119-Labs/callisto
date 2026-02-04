@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/forbole/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/types"
 
-	dbtypes "github.com/forbole/callisto/v4/database/types"
+	dbtypes "github.com/1119-Labs/callisto/v4/database/types"
 )
 
 func (suite *DbTestSuite) insertToken(name string) {

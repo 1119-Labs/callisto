@@ -1,9 +1,9 @@
 package v3
 
 import (
-	v3 "github.com/forbole/juno/v6/cmd/migrate/v3"
+	v3 "github.com/1119-Labs/callisto/v4/lib/cmd/migrate/v3"
 
-	"github.com/forbole/callisto/v4/modules/actions"
+	"github.com/1119-Labs/callisto/v4/modules/actions"
 )
 
 type Config struct {

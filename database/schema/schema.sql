@@ -538,3 +538,35 @@ CREATE TABLE software_upgrade_plan
 );
 CREATE INDEX software_upgrade_plan_proposal_id_index ON software_upgrade_plan (proposal_id);
 CREATE INDEX software_upgrade_plan_height_index ON software_upgrade_plan (height);
+
+-- =====================================================
+-- Junction table linking transactions to involved accounts
+-- This enables efficient queries like "get all transactions for account X"
+-- =====================================================
+CREATE TABLE transaction_account
+(
+    transaction_hash TEXT   NOT NULL,
+    account_address  TEXT   NOT NULL REFERENCES account (address),
+    height           BIGINT NOT NULL,
+    partition_id     BIGINT NOT NULL DEFAULT 0,
+    FOREIGN KEY (transaction_hash, height, partition_id) REFERENCES transaction (hash, height, partition_id),
+    CONSTRAINT unique_tx_account UNIQUE (transaction_hash, account_address, partition_id)
+) PARTITION BY LIST (partition_id);
+CREATE INDEX transaction_account_address_index ON transaction_account (account_address);
+CREATE INDEX transaction_account_hash_index ON transaction_account (transaction_hash);
+CREATE INDEX transaction_account_height_index ON transaction_account (height);
+
+/**
+ * This function is used to find all transactions that involve a specific account address.
+ */
+CREATE FUNCTION transactions_by_account(
+    account TEXT,
+    "limit" BIGINT = 100,
+    "offset" BIGINT = 0)
+    RETURNS SETOF transaction AS
+$$
+SELECT t.* FROM transaction t
+INNER JOIN transaction_account ta ON t.hash = ta.transaction_hash AND t.partition_id = ta.partition_id
+WHERE ta.account_address = account
+ORDER BY t.height DESC LIMIT "limit" OFFSET "offset"
+$$ LANGUAGE sql STABLE;

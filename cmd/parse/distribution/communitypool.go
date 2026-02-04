@@ -3,14 +3,14 @@ package distribution
 import (
 	"fmt"
 
-	parsecmdtypes "github.com/forbole/juno/v6/cmd/parse/types"
-	"github.com/forbole/juno/v6/types/config"
+	parsecmdtypes "github.com/1119-Labs/callisto/v4/lib/cmd/parse/types"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 	"github.com/spf13/cobra"
 
-	"github.com/forbole/callisto/v4/database"
-	"github.com/forbole/callisto/v4/modules/distribution"
-	modulestypes "github.com/forbole/callisto/v4/modules/types"
-	"github.com/forbole/callisto/v4/utils"
+	"github.com/1119-Labs/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/modules/distribution"
+	modulestypes "github.com/1119-Labs/callisto/v4/modules/types"
+	"github.com/1119-Labs/callisto/v4/utils"
 )
 
 // communityPoolCmd returns the Cobra command allowing to refresh community pool

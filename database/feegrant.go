@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 
-	"github.com/forbole/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/types"
 )
 
 // SaveFeeGrantAllowance allows to store the fee grant allowances for the given block height
@@ -13,7 +13,7 @@ func (db *Db) SaveFeeGrantAllowance(allowance types.FeeGrant) error {
 	// Store the accounts
 	var accounts []types.Account
 	accounts = append(accounts, types.NewAccount(allowance.Granter), types.NewAccount(allowance.Grantee))
-	err := db.SaveAccounts(accounts)
+	err := db.SaveAccountsFromTypes(accounts)
 	if err != nil {
 		return fmt.Errorf("error while storing fee grant allowance accounts: %s", err)
 	}

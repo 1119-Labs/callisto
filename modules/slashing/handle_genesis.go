@@ -6,7 +6,7 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/forbole/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/types"
 
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/rs/zerolog/log"

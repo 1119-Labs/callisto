@@ -1,0 +1,141 @@
+CREATE TABLE validator
+(
+    consensus_address TEXT NOT NULL PRIMARY KEY, /* Validator consensus address */
+    consensus_pubkey  TEXT NOT NULL UNIQUE /* Validator consensus public key */
+);
+
+CREATE TABLE block
+(
+    height           BIGINT UNIQUE PRIMARY KEY,
+    hash             TEXT                        NOT NULL UNIQUE,
+    num_txs          INTEGER DEFAULT 0,
+    total_gas        BIGINT  DEFAULT 0,
+    proposer_address TEXT REFERENCES validator (consensus_address),
+    timestamp        TIMESTAMP WITHOUT TIME ZONE NOT NULL
+);
+CREATE INDEX block_height_index ON block (height);
+CREATE INDEX block_hash_index ON block (hash);
+CREATE INDEX block_proposer_address_index ON block (proposer_address);
+
+CREATE TABLE pre_commit
+(
+    validator_address TEXT                        NOT NULL REFERENCES validator (consensus_address),
+    height            BIGINT                      NOT NULL,
+    timestamp         TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    voting_power      BIGINT                      NOT NULL,
+    proposer_priority BIGINT                      NOT NULL,
+    UNIQUE (validator_address, timestamp)
+);
+CREATE INDEX pre_commit_validator_address_index ON pre_commit (validator_address);
+CREATE INDEX pre_commit_height_index ON pre_commit (height);
+
+CREATE TABLE transaction
+(
+    hash         TEXT    NOT NULL,
+    height       BIGINT  NOT NULL,
+    success      BOOLEAN NOT NULL,
+
+    /* Body */
+    messages     JSON    NOT NULL DEFAULT '[]'::JSON,
+    memo         TEXT,
+    signatures   TEXT[]  NOT NULL,
+
+    /* AuthInfo */
+    signer_infos JSONB   NOT NULL DEFAULT '[]'::JSONB,
+    fee          JSONB   NOT NULL DEFAULT '{}'::JSONB,
+
+    /* Tx response */
+    gas_wanted   BIGINT           DEFAULT 0,
+    gas_used     BIGINT           DEFAULT 0,
+    raw_log      TEXT,
+    logs         JSONB,
+
+    /* PSQL partition */
+    partition_id BIGINT  NOT NULL DEFAULT 0,
+
+    CONSTRAINT unique_tx UNIQUE (hash, height, partition_id)
+) PARTITION BY LIST (partition_id);
+CREATE INDEX transaction_hash_index ON transaction (hash);
+CREATE INDEX transaction_height_index ON transaction (height);
+CREATE INDEX transaction_partition_id_index ON transaction (partition_id);
+
+CREATE TABLE message
+(
+    transaction_hash            TEXT   NOT NULL,
+    index                       BIGINT NOT NULL,
+    type                        TEXT   NOT NULL,
+    value                       JSON   NOT NULL,
+    involved_accounts_addresses TEXT[] NOT NULL,
+
+    /* PSQL partition */
+    partition_id                BIGINT NOT NULL DEFAULT 0,
+    height                      BIGINT NOT NULL,
+    FOREIGN KEY (transaction_hash, height, partition_id) REFERENCES transaction (hash, height, partition_id),
+    CONSTRAINT unique_message_per_tx UNIQUE (transaction_hash, height, index, partition_id)
+) PARTITION BY LIST (partition_id);
+CREATE INDEX message_transaction_hash_index ON message (transaction_hash);
+CREATE INDEX message_type_index ON message (type);
+CREATE INDEX message_involved_accounts_index ON message USING GIN(involved_accounts_addresses);
+
+-- =====================================================
+-- Account table for tracking all accounts seen in transactions
+-- =====================================================
+CREATE TABLE account
+(
+    address TEXT NOT NULL PRIMARY KEY
+);
+CREATE INDEX account_address_index ON account (address);
+
+-- =====================================================
+-- Junction table linking transactions to involved accounts
+-- This enables efficient queries like "get all transactions for account X"
+-- =====================================================
+CREATE TABLE transaction_account
+(
+    transaction_hash TEXT   NOT NULL,
+    account_address  TEXT   NOT NULL REFERENCES account (address),
+    height           BIGINT NOT NULL,
+    partition_id     BIGINT NOT NULL DEFAULT 0,
+    FOREIGN KEY (transaction_hash, height, partition_id) REFERENCES transaction (hash, height, partition_id),
+    CONSTRAINT unique_tx_account UNIQUE (transaction_hash, account_address, partition_id)
+) PARTITION BY LIST (partition_id);
+CREATE INDEX transaction_account_address_index ON transaction_account (account_address);
+CREATE INDEX transaction_account_hash_index ON transaction_account (transaction_hash);
+CREATE INDEX transaction_account_height_index ON transaction_account (height);
+
+/**
+ * This function is used to find all transactions that involve a specific account address.
+ */
+CREATE FUNCTION transactions_by_account(
+    account TEXT,
+    "limit" BIGINT = 100,
+    "offset" BIGINT = 0)
+    RETURNS SETOF transaction AS
+$$
+SELECT t.* FROM transaction t
+INNER JOIN transaction_account ta ON t.hash = ta.transaction_hash AND t.partition_id = ta.partition_id
+WHERE ta.account_address = account
+ORDER BY t.height DESC LIMIT "limit" OFFSET "offset"
+$$ LANGUAGE sql STABLE;
+
+/**
+ * This function is used to find all the utils that involve any of the given addresses and have
+ * type that is one of the specified types.
+ */
+CREATE FUNCTION messages_by_address(
+    addresses TEXT[],
+    types TEXT[],
+    "limit" BIGINT = 100,
+    "offset" BIGINT = 0)
+    RETURNS SETOF message AS
+$$
+SELECT * FROM message
+WHERE (cardinality(types) = 0 OR type = ANY (types))
+  AND addresses && involved_accounts_addresses
+ORDER BY height DESC LIMIT "limit" OFFSET "offset"
+$$ LANGUAGE sql STABLE;
+
+CREATE TABLE pruning
+(
+    last_pruned_height BIGINT NOT NULL
+)

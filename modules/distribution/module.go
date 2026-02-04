@@ -3,11 +3,11 @@ package distribution
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 
-	distrsource "github.com/forbole/callisto/v4/modules/distribution/source"
+	distrsource "github.com/1119-Labs/callisto/v4/modules/distribution/source"
 
-	"github.com/forbole/juno/v6/modules"
+	"github.com/1119-Labs/callisto/v4/lib/modules"
 
-	"github.com/forbole/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/database"
 )
 
 var (

@@ -7,22 +7,22 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	modulestypes "github.com/forbole/callisto/v4/modules/types"
+	modulestypes "github.com/1119-Labs/callisto/v4/modules/types"
 
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govtypesv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	parsecmdtypes "github.com/forbole/juno/v6/cmd/parse/types"
-	"github.com/forbole/juno/v6/parser"
-	"github.com/forbole/juno/v6/types/config"
+	parsecmdtypes "github.com/1119-Labs/callisto/v4/lib/cmd/parse/types"
+	"github.com/1119-Labs/callisto/v4/lib/parser"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 	"github.com/spf13/cobra"
 
-	"github.com/forbole/callisto/v4/database"
-	"github.com/forbole/callisto/v4/modules/distribution"
-	"github.com/forbole/callisto/v4/modules/gov"
-	"github.com/forbole/callisto/v4/modules/mint"
-	"github.com/forbole/callisto/v4/modules/slashing"
-	"github.com/forbole/callisto/v4/modules/staking"
-	"github.com/forbole/callisto/v4/utils"
+	"github.com/1119-Labs/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/modules/distribution"
+	"github.com/1119-Labs/callisto/v4/modules/gov"
+	"github.com/1119-Labs/callisto/v4/modules/mint"
+	"github.com/1119-Labs/callisto/v4/modules/slashing"
+	"github.com/1119-Labs/callisto/v4/modules/staking"
+	"github.com/1119-Labs/callisto/v4/utils"
 )
 
 // proposalCmd returns the Cobra command allowing to fix all things related to a proposal

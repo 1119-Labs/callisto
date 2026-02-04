@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	codec "github.com/cosmos/cosmos-sdk/codec"
-	db "github.com/forbole/juno/v6/database"
-	"github.com/forbole/juno/v6/database/postgresql"
+	db "github.com/1119-Labs/callisto/v4/lib/database"
+	"github.com/1119-Labs/callisto/v4/lib/database/postgresql"
 	"github.com/jmoiron/sqlx"
 )
 

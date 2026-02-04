@@ -11,9 +11,23 @@ services:
       - 5433:5432
     volumes:
       - ../postgres_data:/var/lib/postgresql/data
+  
+  rabbitmq:
+    image: rabbitmq:3.8-management
+    container_name: rabbitmq-explorer
+    ports:
+      - 5673:5672
+      - 15673:15672
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   hasura:
     image: hasura/graphql-engine:v2.40.0
-    container_name: harusa-explorer
+    container_name: hasura-explorer
     ports:
       - 9005:8080
     restart: always

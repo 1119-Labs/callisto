@@ -3,17 +3,17 @@ package gov
 import (
 	"github.com/spf13/cobra"
 
-	parsecmdtypes "github.com/forbole/juno/v6/cmd/parse/types"
-	"github.com/forbole/juno/v6/types/config"
+	parsecmdtypes "github.com/1119-Labs/callisto/v4/lib/cmd/parse/types"
+	"github.com/1119-Labs/callisto/v4/lib/types/config"
 
-	"github.com/forbole/callisto/v4/database"
-	"github.com/forbole/callisto/v4/modules/distribution"
-	"github.com/forbole/callisto/v4/modules/gov"
-	"github.com/forbole/callisto/v4/modules/mint"
-	"github.com/forbole/callisto/v4/modules/slashing"
-	"github.com/forbole/callisto/v4/modules/staking"
-	modulestypes "github.com/forbole/callisto/v4/modules/types"
-	"github.com/forbole/callisto/v4/utils"
+	"github.com/1119-Labs/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/modules/distribution"
+	"github.com/1119-Labs/callisto/v4/modules/gov"
+	"github.com/1119-Labs/callisto/v4/modules/mint"
+	"github.com/1119-Labs/callisto/v4/modules/slashing"
+	"github.com/1119-Labs/callisto/v4/modules/staking"
+	modulestypes "github.com/1119-Labs/callisto/v4/modules/types"
+	"github.com/1119-Labs/callisto/v4/utils"
 )
 
 func paramsCmd(parseConfig *parsecmdtypes.Config) *cobra.Command {

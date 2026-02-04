@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"time"
 
+	juno "github.com/1119-Labs/callisto/v4/lib/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	juno "github.com/forbole/juno/v6/types"
 	"github.com/rs/zerolog/log"
 
 	authttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
-	moduleutils "github.com/forbole/callisto/v4/modules/utils"
-	"github.com/forbole/callisto/v4/types"
-	"github.com/forbole/callisto/v4/utils"
+	moduleutils "github.com/1119-Labs/callisto/v4/modules/utils"
+	"github.com/1119-Labs/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/utils"
 )
 
 var msgFilter = map[string]bool{
@@ -65,7 +65,7 @@ func (m *Module) handleMsgCreateVestingAccount(msg *vestingtypes.MsgCreateVestin
 	}
 
 	// store account in database
-	err = m.db.SaveAccounts([]types.Account{types.NewAccount(accAddress.String())})
+	err = m.db.SaveAccountsFromTypes([]types.Account{types.NewAccount(accAddress.String())})
 	if err != nil {
 		return fmt.Errorf("error while storing vesting account: %s", err)
 	}

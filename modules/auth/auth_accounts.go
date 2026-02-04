@@ -7,7 +7,7 @@ import (
 	authttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/rs/zerolog/log"
 
-	"github.com/forbole/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/types"
 )
 
 // GetGenesisAccounts parses the given appState and returns the genesis accounts
@@ -54,5 +54,5 @@ func (m *Module) RefreshAccounts(height int64, addresses []string) error {
 		return nil
 	}
 	accounts := GetAccounts(height, addresses)
-	return m.db.SaveAccounts(accounts)
+	return m.db.SaveAccountsFromTypes(accounts)
 }

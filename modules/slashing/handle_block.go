@@ -3,7 +3,7 @@ package slashing
 import (
 	"fmt"
 
-	juno "github.com/forbole/juno/v6/types"
+	juno "github.com/1119-Labs/callisto/v4/lib/types"
 
 	tmctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/rs/zerolog/log"

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	parsecmdtypes "github.com/forbole/juno/v6/cmd/parse/types"
+	parsecmdtypes "github.com/1119-Labs/callisto/v4/lib/cmd/parse/types"
 	"github.com/spf13/cobra"
 
-	v3 "github.com/forbole/callisto/v4/cmd/migrate/v3"
-	v5 "github.com/forbole/callisto/v4/cmd/migrate/v5"
+	v3 "github.com/1119-Labs/callisto/v4/cmd/migrate/v3"
+	v5 "github.com/1119-Labs/callisto/v4/cmd/migrate/v5"
 )
 
 type Migrator func(parseCfg *parsecmdtypes.Config) error

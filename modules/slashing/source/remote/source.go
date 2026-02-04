@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/forbole/juno/v6/node/remote"
+	"github.com/1119-Labs/callisto/v4/lib/node/remote"
 
-	slashingsource "github.com/forbole/callisto/v4/modules/slashing/source"
+	slashingsource "github.com/1119-Labs/callisto/v4/modules/slashing/source"
 )
 
 var (

@@ -17,7 +17,7 @@ func (m *Module) HandleGenesis(_ *tmtypes.GenesisDoc, appState map[string]json.R
 	if err != nil {
 		return fmt.Errorf("error while getting genesis accounts: %s", err)
 	}
-	err = m.db.SaveAccounts(accounts)
+	err = m.db.SaveAccountsFromTypes(accounts)
 	if err != nil {
 		return fmt.Errorf("error while storing genesis accounts: %s", err)
 	}

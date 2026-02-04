@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/forbole/callisto/v4/modules/actions/types"
+	"github.com/1119-Labs/callisto/v4/modules/actions/types"
 
 	"google.golang.org/grpc/codes"
 

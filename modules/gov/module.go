@@ -3,11 +3,11 @@ package gov
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 
-	"github.com/forbole/callisto/v4/database"
+	"github.com/1119-Labs/callisto/v4/database"
 
-	govsource "github.com/forbole/callisto/v4/modules/gov/source"
+	govsource "github.com/1119-Labs/callisto/v4/modules/gov/source"
 
-	"github.com/forbole/juno/v6/modules"
+	"github.com/1119-Labs/callisto/v4/lib/modules"
 )
 
 var (

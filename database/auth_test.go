@@ -4,9 +4,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authttypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/forbole/callisto/v4/types"
+	"github.com/1119-Labs/callisto/v4/types"
 
-	dbtypes "github.com/forbole/callisto/v4/database/types"
+	dbtypes "github.com/1119-Labs/callisto/v4/database/types"
 )
 
 func (suite *DbTestSuite) TestSaveAccount() {
@@ -19,10 +19,10 @@ func (suite *DbTestSuite) TestSaveAccount() {
 	// --- Save the data
 	// ------------------------------
 
-	err = suite.database.SaveAccounts([]types.Account{types.NewAccount(account.Address)})
+	err = suite.database.SaveAccountsFromTypes([]types.Account{types.NewAccount(account.Address)})
 	suite.Require().NoError(err)
 
-	err = suite.database.SaveAccounts([]types.Account{types.NewAccount(account.Address)})
+	err = suite.database.SaveAccountsFromTypes([]types.Account{types.NewAccount(account.Address)})
 	suite.Require().NoError(err, "double account insertion should not insert and returns no error")
 
 	// ------------------------------

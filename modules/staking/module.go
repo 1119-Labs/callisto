@@ -2,10 +2,10 @@ package staking
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/forbole/juno/v6/modules"
+	"github.com/1119-Labs/callisto/v4/lib/modules"
 
-	"github.com/forbole/callisto/v4/database"
-	stakingsource "github.com/forbole/callisto/v4/modules/staking/source"
+	"github.com/1119-Labs/callisto/v4/database"
+	stakingsource "github.com/1119-Labs/callisto/v4/modules/staking/source"
 )
 
 var (

@@ -70,6 +70,10 @@ func (w TxWorker) Start() {
 		}
 
 		logging.WorkerHeight.WithLabelValues(fmt.Sprintf("tx-%d", w.index), chainID).Set(float64(height))
+		if w.pipelineType == "old" {
+			time.Sleep(1 * time.Second)
+		}
+
 		return nil
 	})
 	if err != nil {

@@ -211,7 +211,7 @@ func startParsing(ctx *parser.Context) error {
 	}
 
 	if cfg.ParseNewBlocks {
-		go enqueueNewBlocks(newBlockPublisher, ctx)
+		// go enqueueNewBlocks(newBlockPublisher, ctx)
 	}
 
 	// Block main process (signal capture will call WaitGroup's Done)
@@ -225,7 +225,7 @@ func enqueueMissingBlocks(exportQueue types.HeightQueue, ctx *parser.Context) {
 	// Get the config
 	cfg := config.Cfg.Parser
 
-	// Get the latest height
+	// Get the latest height from RPC
 	latestBlockHeight := mustGetLatestHeight(ctx)
 
 	lastDbBlockHeight, err := ctx.Database.GetLastBlockHeight()
@@ -261,32 +261,33 @@ func enqueueMissingBlocks(exportQueue types.HeightQueue, ctx *parser.Context) {
 	} else {
 		ctx.Logger.Info("[enqueueMissingBlocks] syncing missing blocks...", "latest_block_height", latestBlockHeight, "start_height", startHeight)
 		for _, i := range ctx.Database.GetMissingHeights(startHeight, latestBlockHeight) {
-			ctx.Logger.Debug("[enqueueMissingBlocks] enqueueing missing block", "height", i)
+			// ctx.Logger.Debug("[enqueueMissingBlocks] enqueueing missing block", "height", i)
 			if err := exportQueue.Publish(i); err != nil {
 				ctx.Logger.Error("failed to publish missing block", "height", i, "err", err)
 			}
+			time.Sleep(5 * time.Second)
 		}
 	}
 }
 
 // enqueueNewBlocks enqueues new block heights onto the provided queue.
-func enqueueNewBlocks(exportQueue types.HeightQueue, ctx *parser.Context) {
-	currHeight := mustGetLatestHeight(ctx)
+// func enqueueNewBlocks(exportQueue types.HeightQueue, ctx *parser.Context) {
+// 	currHeight := mustGetLatestHeight(ctx)
 
-	// Enqueue upcoming heights
-	for {
-		latestBlockHeight := mustGetLatestHeight(ctx)
+// 	// Enqueue upcoming heights
+// 	for {
+// 		latestBlockHeight := mustGetLatestHeight(ctx)
 
-		// Enqueue all heights from the current height up to the latest height
-		for ; currHeight <= latestBlockHeight; currHeight++ {
-			ctx.Logger.Debug("enqueueing new block", "height", currHeight)
-			if err := exportQueue.Publish(currHeight); err != nil {
-				ctx.Logger.Error("failed to publish new block", "height", currHeight, "err", err)
-			}
-		}
-		time.Sleep(config.GetAvgBlockTime())
-	}
-}
+// 		// Enqueue all heights from the current height up to the latest height
+// 		for ; currHeight <= latestBlockHeight; currHeight++ {
+// 			ctx.Logger.Debug("enqueueing new block", "height", currHeight)
+// 			if err := exportQueue.Publish(currHeight); err != nil {
+// 				ctx.Logger.Error("failed to publish new block", "height", currHeight, "err", err)
+// 			}
+// 		}
+// 		time.Sleep(config.GetAvgBlockTime())
+// 	}
+// }
 
 // mustGetLatestHeight tries getting the latest height from the RPC client.
 // If after 50 tries no latest height can be found, it returns 0.

@@ -103,7 +103,7 @@ func (w BlockWorker) Process(height int64) error {
 		return w.HandleGenesis(genesisDoc, genesisState)
 	}
 
-	w.logger.Debug(fmt.Sprintf("[BlockWorker-%s-%d] processing block", w.pipelineType, w.index), "height", height)
+	// w.logger.Debug(fmt.Sprintf("[BlockWorker-%s-%d] processing block", w.pipelineType, w.index), "height", height)
 
 	block, err := w.node.Block(height)
 	if err != nil {
@@ -122,11 +122,11 @@ func (w BlockWorker) Process(height int64) error {
 
 	// Publish tx hashes to tx queue FIRST (so tx workers can start processing early)
 	// This allows tx workers to fetch tx details in parallel while we save block data
-	fmt.Printf("[BlockWorker-%s-%d] Block %d has %d transactions\n", w.pipelineType, w.index, height, len(block.Block.Txs))
+	// fmt.Printf("[BlockWorker-%s-%d] Block %d has %d transactions\n", w.pipelineType, w.index, height, len(block.Block.Txs))
 	for i, tx := range block.Block.Txs {
 		if i > 0 {
 			txHash := fmt.Sprintf("%X", tx.Hash())
-			fmt.Printf("[BlockWorker-%s-%d] Publishing tx to queue: hash=%s, height=%d\n", w.pipelineType, w.index, txHash, height)
+			// fmt.Printf("[BlockWorker-%s-%d] Publishing tx to queue: hash=%s, height=%d\n", w.pipelineType, w.index, txHash, height)
 			if err := w.txQueue.Publish(txHash, height); err != nil {
 				w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] failed to publish tx to queue", w.pipelineType, w.index), "tx_hash", txHash, "height", height, "err", err)
 			}

@@ -210,7 +210,7 @@ func (q *RabbitMQHeightQueue) Consume(handler func(height int64) error) error {
 			continue
 		}
 
-		fmt.Printf("[RabbitMQ-%s] Successfully processed height %d\n", q.queueName, height)
+		// fmt.Printf("[RabbitMQ-%s] Successfully processed height %d\n", q.queueName, height)
 		_ = delivery.Ack(false)
 	}
 
@@ -421,7 +421,7 @@ func (q *RabbitMQTxQueue) Consume(handler func(txHash string, height int64) erro
 			continue
 		}
 
-		fmt.Printf("[RabbitMQ-%s] Successfully processed height %d with txhash %s \n", q.queueName, msg.Height, msg.TxHash)
+		// fmt.Printf("[RabbitMQ-%s] Successfully processed height %d with txhash %s \n", q.queueName, msg.Height, msg.TxHash)
 		_ = delivery.Ack(false)
 	}
 

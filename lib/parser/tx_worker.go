@@ -99,31 +99,43 @@ func (w TxWorker) ProcessTx(txHash string, height int64) error {
 
 	// Save the transaction
 	if err := w.saveTx(tx); err != nil {
+		fmt.Printf("[TxWorker-%s-%d] Error when save a transaction with hash %s in block %d\n", w.pipelineType, w.index, txHash, height)
 		return err
 	}
 
+	fmt.Printf("[TxWorker-%s-%d] Successfully saved transaction with hash %s in block %d\n", w.pipelineType, w.index, txHash, height)
 	// Save transaction-account relationships
 	if err := w.db.SaveTxAccounts(tx.TxHash, int64(tx.Height), accounts); err != nil {
 		w.logger.Error(fmt.Sprintf("[TxWorker-%s-%d] failed to save tx-account relationships", w.pipelineType, w.index), "tx_hash", txHash, "err", err)
 		// Don't fail the transaction processing for relationship saving errors
 	}
 
+	fmt.Printf("[TxWorker-%s-%d] Successfully saved tx-account relationships for transaction with hash %s in block %d\n", w.pipelineType, w.index, txHash, height)
 	// Call tx handlers
 	w.handleTx(tx)
+
+	fmt.Printf("[TxWorker-%s-%d] Successfully handled transaction with hash %s in block %d\n", w.pipelineType, w.index, txHash, height)
 
 	// Call message handlers
 	for i, msg := range tx.Tx.Body.Messages {
 		w.handleMessage(i, msg, tx)
 	}
 
+	fmt.Printf("[TxWorker-%s-%d] Successfully handled all messages for transaction with hash %s in block %d\n", w.pipelineType, w.index, txHash, height)
+
 	// Update metrics
 	totalBlocks := w.db.GetTotalBlocks()
 	logging.DbBlockCount.WithLabelValues("total_blocks_in_db").Set(float64(totalBlocks))
+
+	fmt.Printf("[TxWorker-%s-%d] Total blocks in database: %d\n", w.pipelineType, w.index, totalBlocks)
 
 	dbLatestHeight, err := w.db.GetLastBlockHeight()
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("[TxWorker-%s-%d] Latest block height in database: %d\n", w.pipelineType, w.index, dbLatestHeight)
+
 	logging.DbLatestHeight.WithLabelValues("db_latest_height").Set(float64(dbLatestHeight))
 
 	return nil

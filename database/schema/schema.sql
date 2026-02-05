@@ -42,22 +42,22 @@ CREATE TABLE transaction
     height       BIGINT  NOT NULL,
     success      BOOLEAN NOT NULL,
 
-    /* Body */
+    
     messages     JSON    NOT NULL DEFAULT '[]'::JSON,
     memo         TEXT,
     signatures   TEXT[]  NOT NULL,
 
-    /* AuthInfo */
+    
     signer_infos JSONB   NOT NULL DEFAULT '[]'::JSONB,
     fee          JSONB   NOT NULL DEFAULT '{}'::JSONB,
 
-    /* Tx response */
+    
     gas_wanted   BIGINT           DEFAULT 0,
     gas_used     BIGINT           DEFAULT 0,
     raw_log      TEXT,
     logs         JSONB,
 
-    /* PSQL partition */
+    
     partition_id BIGINT  NOT NULL DEFAULT 0,
 
     CONSTRAINT unique_tx UNIQUE (hash, height, partition_id)
@@ -84,7 +84,6 @@ CREATE TABLE message
     value                       JSON   NOT NULL,
     involved_accounts_addresses TEXT[] NOT NULL,
 
-    /* PSQL partition */
     partition_id                BIGINT NOT NULL DEFAULT 0,
     height                      BIGINT NOT NULL,
     FOREIGN KEY (transaction_hash, height, partition_id) REFERENCES transaction (hash, height, partition_id),
@@ -131,11 +130,11 @@ CREATE TABLE pruning
 );
 
 /* ---- Moved from bank.sql for vesting account usage ---- */
-CREATE TYPE COIN AS
-(
-    denom  TEXT,
-    amount TEXT
-);
+-- CREATE TYPE COIN AS
+-- (
+--     denom  TEXT,
+--     amount TEXT
+-- );
 
 /* ---- AUTH/ VESTING ACCOUNT ---- */
 CREATE TABLE vesting_account
@@ -339,13 +338,14 @@ CREATE TABLE inflation
     height     BIGINT  NOT NULL,
     CONSTRAINT one_row_uni CHECK (one_row_id)
 );
-CREATE INDEX inflation_height_index ON inflation (height);CREATE TYPE DEC_COIN AS
-(
-    denom  TEXT,
-    amount TEXT
-);
+CREATE INDEX inflation_height_index ON inflation (height);
 
-/* ---- PARAMS ---- */
+-- CREATE TYPE DEC_COIN AS
+-- (
+--     denom  TEXT,
+--     amount TEXT
+-- );
+
 
 CREATE TABLE distribution_params
 (

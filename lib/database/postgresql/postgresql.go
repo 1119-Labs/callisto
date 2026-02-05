@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 
@@ -41,9 +42,12 @@ func Builder(ctx *database.Context) (database.Database, error) {
 		return nil, err
 	}
 
-	// Set max open connections
+	// Configure connection pool
 	postgresDb.SetMaxOpenConns(ctx.Cfg.MaxOpenConnections)
 	postgresDb.SetMaxIdleConns(ctx.Cfg.MaxIdleConnections)
+	if ctx.Cfg.ConnMaxLifetimeSeconds > 0 {
+		postgresDb.SetConnMaxLifetime(time.Duration(ctx.Cfg.ConnMaxLifetimeSeconds) * time.Second)
+	}
 
 	return &Database{
 		SQL:    postgresDb,
@@ -61,17 +65,54 @@ type Database struct {
 	Logger logging.Logger
 }
 
-// CreatePartitionIfNotExists creates a new partition having the given partition id if not existing
+// // CreatePartitionIfNotExists creates a new partition having the given partition id if not existing
+// func (db *Database) CreatePartitionIfNotExists(table string, partitionID int64) error {
+// 	partitionTable := fmt.Sprintf("%s_%d", table, partitionID)
+
+// 	stmt := fmt.Sprintf(
+// 		"CREATE TABLE IF NOT EXISTS %s PARTITION OF %s FOR VALUES IN (%d)",
+// 		partitionTable,
+// 		table,
+// 		partitionID,
+// 	)
+// 	_, err := db.SQL.Exec(stmt)
+
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
 func (db *Database) CreatePartitionIfNotExists(table string, partitionID int64) error {
 	partitionTable := fmt.Sprintf("%s_%d", table, partitionID)
 
+	// Check if partition already exists
+	var exists bool
+	checkStmt := `
+  SELECT EXISTS (
+   SELECT 1 FROM pg_tables 
+   WHERE tablename = $1
+  )
+ `
+	err := db.SQL.QueryRow(checkStmt, partitionTable).Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	// If partition exists, skip creation
+	if exists {
+		return nil
+	}
+
+	// Create the partition
 	stmt := fmt.Sprintf(
-		"CREATE TABLE IF NOT EXISTS %s PARTITION OF %s FOR VALUES IN (%d)",
+		"CREATE TABLE %s PARTITION OF %s FOR VALUES IN (%d)",
 		partitionTable,
 		table,
 		partitionID,
 	)
-	_, err := db.SQL.Exec(stmt)
+	_, err = db.SQL.Exec(stmt)
 
 	if err != nil {
 		return err

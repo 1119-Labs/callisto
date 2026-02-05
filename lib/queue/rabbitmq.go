@@ -13,6 +13,60 @@ import (
 	"github.com/1119-Labs/callisto/v4/lib/types/config"
 )
 
+const (
+	// Dead letter exchange name
+	DeadLetterExchange = "callisto-dlx"
+)
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Dead Letter Queue Setup
+// ---------------------------------------------------------------------------------------------------------------------
+
+// setupDeadLetterExchange creates the dead letter exchange if it doesn't exist.
+func setupDeadLetterExchange(ch *amqp.Channel) error {
+	return ch.ExchangeDeclare(
+		DeadLetterExchange,
+		"direct", // type
+		true,     // durable
+		false,    // autoDelete
+		false,    // internal
+		false,    // noWait
+		nil,      // args
+	)
+}
+
+// setupDeadLetterQueue creates a dead letter queue for the given main queue.
+func setupDeadLetterQueue(ch *amqp.Channel, mainQueueName string) error {
+	dlqName := mainQueueName + "-dlq"
+
+	// Declare the dead letter queue
+	_, err := ch.QueueDeclare(
+		dlqName,
+		true,  // durable
+		false, // autoDelete
+		false, // exclusive
+		false, // noWait
+		nil,   // args
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare dead letter queue %s: %w", dlqName, err)
+	}
+
+	// Bind the DLQ to the dead letter exchange with the main queue name as routing key
+	err = ch.QueueBind(
+		dlqName,            // queue name
+		mainQueueName,      // routing key (same as main queue name)
+		DeadLetterExchange, // exchange
+		false,              // noWait
+		nil,                // args
+	)
+	if err != nil {
+		return fmt.Errorf("failed to bind dead letter queue %s: %w", dlqName, err)
+	}
+
+	return nil
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // RabbitMQHeightQueue - Block Height Queue
 // ---------------------------------------------------------------------------------------------------------------------
@@ -44,13 +98,33 @@ func connectHeightQueue(cfg config.RabbitMQConfig, queueName string) (types.Heig
 		return nil, fmt.Errorf("failed to open rabbitmq channel: %w", err)
 	}
 
+	// Setup dead letter exchange
+	if err := setupDeadLetterExchange(ch); err != nil {
+		_ = ch.Close()
+		_ = conn.Close()
+		return nil, fmt.Errorf("failed to setup dead letter exchange: %w", err)
+	}
+
+	// Setup dead letter queue for this queue
+	if err := setupDeadLetterQueue(ch, queueName); err != nil {
+		_ = ch.Close()
+		_ = conn.Close()
+		return nil, fmt.Errorf("failed to setup dead letter queue: %w", err)
+	}
+
+	// Declare main queue with dead letter exchange
+	queueArgs := amqp.Table{
+		"x-dead-letter-exchange":    DeadLetterExchange,
+		"x-dead-letter-routing-key": queueName,
+	}
+
 	_, err = ch.QueueDeclare(
 		queueName,
-		true,  // durable
-		false, // autoDelete
-		false, // exclusive
-		false, // noWait
-		nil,   // args
+		true,      // durable
+		false,     // autoDelete
+		false,     // exclusive
+		false,     // noWait
+		queueArgs, // args with DLX config
 	)
 	if err != nil {
 		_ = ch.Close()
@@ -121,19 +195,63 @@ func (q *RabbitMQHeightQueue) Consume(handler func(height int64) error) error {
 	for delivery := range deliveries {
 		height, err := strconv.ParseInt(string(delivery.Body), 10, 64)
 		if err != nil {
-			_ = delivery.Nack(false, false)
+			// Send to DLQ with parse error
+			fmt.Printf("[RabbitMQ-%s] parse error at delivery %v\n", q.queueName, delivery)
+			q.sendToDeadLetter(delivery, "parse_error", fmt.Sprintf("failed to parse height: %v", err))
+			_ = delivery.Ack(false) // Ack so it goes to DLQ via our manual publish
 			continue
 		}
 
 		if err := handler(height); err != nil {
-			_ = delivery.Nack(false, true)
+			fmt.Printf("[RabbitMQ-%s] Error handling height %d: %v\n", q.queueName, height, err)
+			// Send to DLQ with handler error
+			q.sendToDeadLetter(delivery, "handler_error", err.Error())
+			_ = delivery.Ack(false) // Ack so it goes to DLQ via our manual publish
 			continue
 		}
 
+		fmt.Printf("[RabbitMQ-%s] Successfully processed height %d\n", q.queueName, height)
 		_ = delivery.Ack(false)
 	}
 
 	return nil
+}
+
+// sendToDeadLetter manually publishes a failed message to the dead letter queue with error details.
+func (q *RabbitMQHeightQueue) sendToDeadLetter(delivery amqp.Delivery, errorType, errorMsg string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	headers := amqp.Table{
+		"x-error-type":     errorType,
+		"x-error-message":  errorMsg,
+		"x-original-queue": q.queueName,
+		"x-failed-at":      time.Now().UTC().Format(time.RFC3339),
+	}
+
+	// Copy original headers if any
+	if delivery.Headers != nil {
+		for k, v := range delivery.Headers {
+			headers["x-original-"+k] = v
+		}
+	}
+
+	err := q.channel.PublishWithContext(
+		ctx,
+		DeadLetterExchange,
+		q.queueName, // routing key = original queue name
+		false,
+		false,
+		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			ContentType:  delivery.ContentType,
+			Body:         delivery.Body,
+			Headers:      headers,
+		},
+	)
+	if err != nil {
+		fmt.Printf("[RabbitMQ-%s] Failed to send to DLQ: %v\n", q.queueName, err)
+	}
 }
 
 // Close closes the queue resources.
@@ -187,13 +305,33 @@ func connectTxQueue(cfg config.RabbitMQConfig, queueName string) (types.TxQueue,
 		return nil, fmt.Errorf("failed to open rabbitmq channel: %w", err)
 	}
 
+	// Setup dead letter exchange
+	if err := setupDeadLetterExchange(ch); err != nil {
+		_ = ch.Close()
+		_ = conn.Close()
+		return nil, fmt.Errorf("failed to setup dead letter exchange: %w", err)
+	}
+
+	// Setup dead letter queue for this queue
+	if err := setupDeadLetterQueue(ch, queueName); err != nil {
+		_ = ch.Close()
+		_ = conn.Close()
+		return nil, fmt.Errorf("failed to setup dead letter queue: %w", err)
+	}
+
+	// Declare main queue with dead letter exchange
+	queueArgs := amqp.Table{
+		"x-dead-letter-exchange":    DeadLetterExchange,
+		"x-dead-letter-routing-key": queueName,
+	}
+
 	_, err = ch.QueueDeclare(
 		queueName,
-		true,  // durable
-		false, // autoDelete
-		false, // exclusive
-		false, // noWait
-		nil,   // args
+		true,      // durable
+		false,     // autoDelete
+		false,     // exclusive
+		false,     // noWait
+		queueArgs, // args with DLX config
 	)
 	if err != nil {
 		_ = ch.Close()
@@ -269,19 +407,62 @@ func (q *RabbitMQTxQueue) Consume(handler func(txHash string, height int64) erro
 	for delivery := range deliveries {
 		var msg TxMessage
 		if err := json.Unmarshal(delivery.Body, &msg); err != nil {
-			_ = delivery.Nack(false, false)
+			// Send to DLQ with parse error
+			q.sendToDeadLetter(delivery, "parse_error", fmt.Sprintf("failed to unmarshal tx message: %v", err))
+			_ = delivery.Ack(false)
 			continue
 		}
 
 		if err := handler(msg.TxHash, msg.Height); err != nil {
-			_ = delivery.Nack(false, true)
+			fmt.Printf("[RabbitMQ-%s] Error handling height %d with tx hash %s: %v\n", q.queueName, msg.Height, msg.TxHash, err)
+			// Send to DLQ with handler error
+			q.sendToDeadLetter(delivery, "handler_error", err.Error())
+			_ = delivery.Ack(false)
 			continue
 		}
 
+		fmt.Printf("[RabbitMQ-%s] Successfully processed height %d with txhash %s \n", q.queueName, msg.Height, msg.TxHash)
 		_ = delivery.Ack(false)
 	}
 
 	return nil
+}
+
+// sendToDeadLetter manually publishes a failed message to the dead letter queue with error details.
+func (q *RabbitMQTxQueue) sendToDeadLetter(delivery amqp.Delivery, errorType, errorMsg string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	headers := amqp.Table{
+		"x-error-type":     errorType,
+		"x-error-message":  errorMsg,
+		"x-original-queue": q.queueName,
+		"x-failed-at":      time.Now().UTC().Format(time.RFC3339),
+	}
+
+	// Copy original headers if any
+	if delivery.Headers != nil {
+		for k, v := range delivery.Headers {
+			headers["x-original-"+k] = v
+		}
+	}
+
+	err := q.channel.PublishWithContext(
+		ctx,
+		DeadLetterExchange,
+		q.queueName, // routing key = original queue name
+		false,
+		false,
+		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			ContentType:  delivery.ContentType,
+			Body:         delivery.Body,
+			Headers:      headers,
+		},
+	)
+	if err != nil {
+		fmt.Printf("[RabbitMQ-%s] Failed to send to DLQ: %v\n", q.queueName, err)
+	}
 }
 
 // Close closes the queue resources.

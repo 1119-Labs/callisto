@@ -3,32 +3,34 @@ package config
 import "net/url"
 
 type Config struct {
-	URL                string `yaml:"url"`
-	MaxOpenConnections int    `yaml:"max_open_connections"`
-	MaxIdleConnections int    `yaml:"max_idle_connections"`
-	PartitionSize      int64  `yaml:"partition_size"`
-	PartitionBatchSize int64  `yaml:"partition_batch"`
-	SSLModeEnable      string `yaml:"ssl_mode_enable"`
-	SSLRootCert        string `yaml:"ssl_root_cert"`
-	SSLCert            string `yaml:"ssl_cert"`
-	SSLKey             string `yaml:"ssl_key"`
+	URL                    string `yaml:"url"`
+	MaxOpenConnections     int    `yaml:"max_open_connections"`
+	MaxIdleConnections     int    `yaml:"max_idle_connections"`
+	ConnMaxLifetimeSeconds int    `yaml:"conn_max_lifetime_seconds"`
+	PartitionSize          int64  `yaml:"partition_size"`
+	PartitionBatchSize     int64  `yaml:"partition_batch"`
+	SSLModeEnable          string `yaml:"ssl_mode_enable"`
+	SSLRootCert            string `yaml:"ssl_root_cert"`
+	SSLCert                string `yaml:"ssl_cert"`
+	SSLKey                 string `yaml:"ssl_key"`
 }
 
 func NewDatabaseConfig(
 	url, sslModeEnable, sslRootCert, sslCert, sslKey string,
-	maxOpenConnections int, maxIdleConnections int,
+	maxOpenConnections int, maxIdleConnections int, connMaxLifetimeSeconds int,
 	partitionSize int64, batchSize int64,
 ) Config {
 	return Config{
-		URL:                url,
-		MaxOpenConnections: maxOpenConnections,
-		MaxIdleConnections: maxIdleConnections,
-		PartitionSize:      partitionSize,
-		PartitionBatchSize: batchSize,
-		SSLModeEnable:      sslModeEnable,
-		SSLRootCert:        sslRootCert,
-		SSLCert:            sslCert,
-		SSLKey:             sslKey,
+		URL:                    url,
+		MaxOpenConnections:     maxOpenConnections,
+		MaxIdleConnections:     maxIdleConnections,
+		ConnMaxLifetimeSeconds: connMaxLifetimeSeconds,
+		PartitionSize:          partitionSize,
+		PartitionBatchSize:     batchSize,
+		SSLModeEnable:          sslModeEnable,
+		SSLRootCert:            sslRootCert,
+		SSLCert:                sslCert,
+		SSLKey:                 sslKey,
 	}
 }
 
@@ -118,8 +120,9 @@ func DefaultDatabaseConfig() Config {
 		"",
 		"",
 		"",
-		1,
-		1,
+		50,  // max_open_connections - enough for all workers
+		20,  // max_idle_connections - keep some warm
+		300, // conn_max_lifetime_seconds - 5 minutes
 		100000,
 		1000,
 	)

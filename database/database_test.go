@@ -53,6 +53,7 @@ func (suite *DbTestSuite) SetupTest() {
 		-1,
 		100000,
 		100,
+		100,
 	)
 
 	db, err := database.Builder(utils.GetCodec())(junodb.NewContext(dbCfg, logging.DefaultLogger()))

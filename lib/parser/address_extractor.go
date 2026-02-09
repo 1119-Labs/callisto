@@ -66,6 +66,11 @@ func (ae *AddressExtractor) registerExtractors() {
 func (ae *AddressExtractor) ExtractFromTx(tx *types.Transaction) []string {
 	uniqueAddresses := make(map[string]struct{})
 
+	// Check for nil tx or tx body
+	if tx == nil || tx.Tx == nil || tx.Tx.Body == nil {
+		return []string{}
+	}
+
 	for _, msg := range tx.Tx.Body.Messages {
 		addresses := ae.ExtractFromMessage(msg)
 		for _, addr := range addresses {

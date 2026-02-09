@@ -234,6 +234,44 @@ func (cp *Node) Txs(block *tmctypes.ResultBlock) ([]*types.Transaction, error) {
 	return txResponses, nil
 }
 
+// BlockTransactionsResponse represents the API response for block transactions.
+type BlockTransactionsResponse struct {
+	Txs []*types.Transaction `json:"txs"`
+}
+
+// BlockTransactions implements node.Node - fetches all transactions for a block via dedicated API.
+func (cp *Node) BlockTransactions(height int64) ([]*types.Transaction, error) {
+	url := fmt.Sprintf("%s/perpx/tx/block/%d/transactions", cp.txServiceAPI, height)
+	fmt.Printf("[BlockTransactions] Fetching txs from: %s\n", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch block transactions: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("block transactions request failed with status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading block transactions response body: %w", err)
+	}
+
+	fmt.Printf("[BlockTransactions] Response body (first 500 chars): %.500s\n", string(body))
+
+	// Parse as {"txs": [...]}
+	var txResponse BlockTransactionsResponse
+	err = json.Unmarshal(body, &txResponse)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling block transactions: %w", err)
+	}
+
+	fmt.Printf("[BlockTransactions] Parsed %d transactions\n", len(txResponse.Txs))
+	return txResponse.Txs, nil
+}
+
 // TxSearch implements node.Node
 func (cp *Node) TxSearch(query string, page *int, perPage *int, orderBy string) (*tmctypes.ResultTxSearch, error) {
 	return cp.client.TxSearch(cp.ctx, query, false, page, perPage, orderBy)

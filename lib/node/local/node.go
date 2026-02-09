@@ -457,6 +457,16 @@ func (cp *Node) Txs(block *tmctypes.ResultBlock) ([]*types.Transaction, error) {
 	return txResponses, nil
 }
 
+// BlockTransactions implements node.Node - fetches all transactions for a block.
+// For local node, this fetches the block and then gets each transaction.
+func (cp *Node) BlockTransactions(height int64) ([]*types.Transaction, error) {
+	block, err := cp.Block(height)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get block %d: %w", height, err)
+	}
+	return cp.Txs(block)
+}
+
 // TxSearch implements node.Node
 func (cp *Node) TxSearch(query string, pagePtr *int, perPagePtr *int, orderBy string) (*tmctypes.ResultTxSearch, error) {
 	q, err := tmquery.New(query)

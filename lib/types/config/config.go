@@ -108,11 +108,9 @@ type RabbitMQConfig struct {
 
 	// New block pipeline (high priority - real-time)
 	NewBlockQueueName string `yaml:"new_block_queue_name"`
-	NewTxQueueName    string `yaml:"new_tx_queue_name"`
 
 	// Old/missing block pipeline (lower priority - backfill)
 	OldBlockQueueName string `yaml:"old_block_queue_name"`
-	OldTxQueueName    string `yaml:"old_tx_queue_name"`
 
 	Prefetch int `yaml:"prefetch"`
 }
@@ -123,9 +121,7 @@ func DefaultQueueConfig() QueueConfig {
 		RabbitMQ: RabbitMQConfig{
 			URL:               "amqp://guest:guest@localhost:5672/",
 			NewBlockQueueName: "callisto-new-block-queue",
-			NewTxQueueName:    "callisto-new-tx-queue",
 			OldBlockQueueName: "callisto-old-block-queue",
-			OldTxQueueName:    "callisto-old-tx-queue",
 			Prefetch:          25,
 		},
 	}

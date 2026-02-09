@@ -43,6 +43,11 @@ type Node interface {
 	// returned if any query fails.
 	Txs(block *tmctypes.ResultBlock) ([]*types.Transaction, error)
 
+	// BlockTransactions fetches all transactions for a given block height via the
+	// dedicated block transactions API endpoint. This is more efficient than
+	// fetching transactions individually.
+	BlockTransactions(height int64) ([]*types.Transaction, error)
+
 	// TxSearch defines a method to search for a paginated set of transactions by DeliverTx event search criteria.
 	TxSearch(query string, page *int, perPage *int, orderBy string) (*tmctypes.ResultTxSearch, error)
 

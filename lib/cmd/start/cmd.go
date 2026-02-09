@@ -96,7 +96,7 @@ func startParsing(ctx *parser.Context) error {
 	}
 	allConnections = append(allConnections, newBlockPublisher)
 
-	// New block workers: consume heights, save block data, publish tx hashes to new-tx-queue
+	// New block workers: consume heights, fetch all block+tx data via API, save to DB
 	newBlockWorkers := make([]parser.BlockWorker, cfg.NewBlockWorkers)
 	for i := range newBlockWorkers {
 		blockConsumer, err := queue.ConnectNewBlockQueue(queueCfg)
@@ -105,25 +105,7 @@ func startParsing(ctx *parser.Context) error {
 		}
 		allConnections = append(allConnections, blockConsumer)
 
-		// Each block worker gets its own tx publisher connection
-		txPublisher, err := queue.ConnectNewTxQueue(queueCfg)
-		if err != nil {
-			return err
-		}
-		allConnections = append(allConnections, txPublisher)
-
-		newBlockWorkers[i] = parser.NewBlockWorker(ctx, blockConsumer, txPublisher, int(i), "new")
-	}
-
-	// New tx workers: consume from new-tx-queue
-	newTxWorkers := make([]parser.TxWorker, cfg.NewTxWorkers)
-	for i := range newTxWorkers {
-		txConsumer, err := queue.ConnectNewTxQueue(queueCfg)
-		if err != nil {
-			return err
-		}
-		allConnections = append(allConnections, txConsumer)
-		newTxWorkers[i] = parser.NewTxWorker(ctx, txConsumer, int(i), "new")
+		newBlockWorkers[i] = parser.NewBlockWorker(ctx, blockConsumer, int(i), "new")
 	}
 
 	// =============================================================
@@ -137,7 +119,7 @@ func startParsing(ctx *parser.Context) error {
 	}
 	allConnections = append(allConnections, oldBlockPublisher)
 
-	// Old block workers: consume heights, save block data, publish tx hashes to old-tx-queue
+	// Old block workers: consume heights, fetch all block+tx data via API, save to DB
 	oldBlockWorkers := make([]parser.BlockWorker, cfg.OldBlockWorkers)
 	for i := range oldBlockWorkers {
 		blockConsumer, err := queue.ConnectOldBlockQueue(queueCfg)
@@ -146,25 +128,7 @@ func startParsing(ctx *parser.Context) error {
 		}
 		allConnections = append(allConnections, blockConsumer)
 
-		// Each block worker gets its own tx publisher connection
-		txPublisher, err := queue.ConnectOldTxQueue(queueCfg)
-		if err != nil {
-			return err
-		}
-		allConnections = append(allConnections, txPublisher)
-
-		oldBlockWorkers[i] = parser.NewBlockWorker(ctx, blockConsumer, txPublisher, int(i), "old")
-	}
-
-	// Old tx workers: consume from old-tx-queue
-	oldTxWorkers := make([]parser.TxWorker, cfg.OldTxWorkers)
-	for i := range oldTxWorkers {
-		txConsumer, err := queue.ConnectOldTxQueue(queueCfg)
-		if err != nil {
-			return err
-		}
-		allConnections = append(allConnections, txConsumer)
-		oldTxWorkers[i] = parser.NewTxWorker(ctx, txConsumer, int(i), "old")
+		oldBlockWorkers[i] = parser.NewBlockWorker(ctx, blockConsumer, int(i), "old")
 	}
 
 	waitGroup.Add(1)
@@ -181,18 +145,10 @@ func startParsing(ctx *parser.Context) error {
 		ctx.Logger.Debug("starting new block worker...", "number", i+1)
 		go w.Start()
 	}
-	for i, w := range newTxWorkers {
-		ctx.Logger.Debug("starting new tx worker...", "number", i+1)
-		go w.Start()
-	}
 
 	// Start old block pipeline workers
 	for i, w := range oldBlockWorkers {
 		ctx.Logger.Debug("starting old block worker...", "number", i+1)
-		go w.Start()
-	}
-	for i, w := range oldTxWorkers {
-		ctx.Logger.Debug("starting old tx worker...", "number", i+1)
 		go w.Start()
 	}
 

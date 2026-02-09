@@ -19,15 +19,14 @@ import (
 )
 
 // BlockWorker processes block heights from the block queue.
-// It fetches block data via RPC, saves block/consensus info to DB,
-// and publishes transaction hashes to the tx queue.
+// It fetches all block data (including transactions) via a single API call and saves to DB.
 type BlockWorker struct {
 	index        int
 	pipelineType string // "new" or "old"
 
-	blockQueue types.HeightQueue
-	txQueue    types.TxQueue
-	modules    []modules.Module
+	blockQueue       types.HeightQueue
+	modules          []modules.Module
+	addressExtractor *AddressExtractor
 
 	node   node.Node
 	db     database.Database
@@ -36,16 +35,16 @@ type BlockWorker struct {
 
 // NewBlockWorker creates a new BlockWorker instance.
 // pipelineType should be "new" for real-time blocks or "old" for backfill/missing blocks.
-func NewBlockWorker(ctx *Context, blockQueue types.HeightQueue, txQueue types.TxQueue, index int, pipelineType string) BlockWorker {
+func NewBlockWorker(ctx *Context, blockQueue types.HeightQueue, index int, pipelineType string) BlockWorker {
 	return BlockWorker{
-		index:        index,
-		pipelineType: pipelineType,
-		node:         ctx.Node,
-		blockQueue:   blockQueue,
-		txQueue:      txQueue,
-		db:           ctx.Database,
-		modules:      ctx.Modules,
-		logger:       ctx.Logger,
+		index:            index,
+		pipelineType:     pipelineType,
+		node:             ctx.Node,
+		blockQueue:       blockQueue,
+		db:               ctx.Database,
+		modules:          ctx.Modules,
+		logger:           ctx.Logger,
+		addressExtractor: NewAddressExtractor(),
 	}
 }
 
@@ -92,7 +91,7 @@ func (w BlockWorker) ProcessIfNotExists(height int64) error {
 	return w.Process(height)
 }
 
-// Process fetches a block and exports block/consensus data, then publishes tx hashes to tx queue.
+// Process fetches a block and all its transactions via API, then saves everything to DB.
 func (w BlockWorker) Process(height int64) error {
 	if height == 0 {
 		cfg := config.Cfg.Parser
@@ -103,8 +102,7 @@ func (w BlockWorker) Process(height int64) error {
 		return w.HandleGenesis(genesisDoc, genesisState)
 	}
 
-	// w.logger.Debug(fmt.Sprintf("[BlockWorker-%s-%d] processing block", w.pipelineType, w.index), "height", height)
-
+	// Fetch block data
 	block, err := w.node.Block(height)
 	if err != nil {
 		return fmt.Errorf("failed to get block from node: %s", err)
@@ -120,23 +118,37 @@ func (w BlockWorker) Process(height int64) error {
 		return fmt.Errorf("failed to get validators for block: %s", err)
 	}
 
-	// Publish tx hashes to tx queue FIRST (so tx workers can start processing early)
-	// This allows tx workers to fetch tx details in parallel while we save block data
-	// fmt.Printf("[BlockWorker-%s-%d] Block %d has %d transactions\n", w.pipelineType, w.index, height, len(block.Block.Txs))
-	for i, tx := range block.Block.Txs {
-		if i > 0 {
-			txHash := fmt.Sprintf("%X", tx.Hash())
-			// fmt.Printf("[BlockWorker-%s-%d] Publishing tx to queue: hash=%s, height=%d\n", w.pipelineType, w.index, txHash, height)
-			if err := w.txQueue.Publish(txHash, height); err != nil {
-				w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] failed to publish tx to queue", w.pipelineType, w.index), "tx_hash", txHash, "height", height, "err", err)
-			}
-		}
-
+	// Fetch all transactions for this block via the dedicated API
+	txs, err := w.node.BlockTransactions(height)
+	if err != nil {
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] failed to fetch block transactions", w.pipelineType, w.index), "height", height, "err", err)
+		// Continue with block processing even if tx fetch fails
+		txs = nil
 	}
 
-	// Export block and consensus data (DB write - can take time)
+	// Export block and consensus data
 	if err := w.ExportBlock(block, events, vals); err != nil {
 		return err
+	}
+
+	// Process all transactions (skip first tx in block - it's a system tx)
+	if txs != nil && len(txs) > 1 {
+		for i := 1; i < len(txs); i++ {
+			tx := txs[i]
+			if err := w.ProcessTx(tx); err != nil {
+				w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] failed to process tx", w.pipelineType, w.index), "tx_hash", tx.TxHash, "height", height, "err", err)
+				// Continue processing other transactions
+			}
+		}
+	}
+
+	// Update metrics
+	totalBlocks := w.db.GetTotalBlocks()
+	logging.DbBlockCount.WithLabelValues("total_blocks_in_db").Set(float64(totalBlocks))
+
+	dbLatestHeight, err := w.db.GetLastBlockHeight()
+	if err == nil {
+		logging.DbLatestHeight.WithLabelValues("db_latest_height").Set(float64(dbLatestHeight))
 	}
 
 	return nil
@@ -245,4 +257,115 @@ func (w BlockWorker) ExportCommit(commit *tmtypes.Commit, vals *tmctypes.ResultV
 	}
 
 	return nil
+}
+
+// ProcessTx processes a single transaction - saves it and all related data to DB.
+func (w BlockWorker) ProcessTx(tx *types.Transaction) error {
+	if tx == nil {
+		return nil
+	}
+
+	w.logger.Debug(fmt.Sprintf("[BlockWorker-%s-%d] processing tx", w.pipelineType, w.index), "tx_hash", tx.TxHash, "height", tx.Height)
+
+	// Extract all involved accounts from the transaction using the registry-based extractor
+	accounts := w.addressExtractor.ExtractFromTx(tx)
+
+	// Save accounts first (they need to exist before we can reference them)
+	if err := w.db.SaveAccounts(accounts); err != nil {
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] failed to save accounts", w.pipelineType, w.index), "tx_hash", tx.TxHash, "err", err)
+		// Don't fail the transaction processing for account saving errors
+	}
+
+	// Save the transaction
+	if err := w.saveTx(tx); err != nil {
+		return err
+	}
+
+	// Save transaction-account relationships
+	if err := w.db.SaveTxAccounts(tx.TxHash, int64(tx.Height), accounts); err != nil {
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] failed to save tx-account relationships", w.pipelineType, w.index), "tx_hash", tx.TxHash, "err", err)
+		// Don't fail the transaction processing for relationship saving errors
+	}
+
+	// Call tx handlers
+	w.handleTx(tx)
+
+	// Call message handlers (only if tx body is available)
+	if tx.Tx != nil && tx.Tx.Body != nil {
+		for i, msg := range tx.Tx.Body.Messages {
+			w.handleMessage(i, msg, tx)
+		}
+	}
+
+	return nil
+}
+
+// saveTx persists a transaction to the database.
+func (w BlockWorker) saveTx(tx *types.Transaction) error {
+	if tx == nil {
+		return nil
+	}
+	err := w.db.SaveTx(tx)
+	if err != nil {
+		txHash := ""
+		if tx.TxResponse != nil {
+			txHash = tx.TxResponse.TxHash
+		}
+		return fmt.Errorf("failed to handle transaction with hash %s: %s", txHash, err)
+	}
+	return nil
+}
+
+// handleTx calls all registered transaction handlers.
+func (w BlockWorker) handleTx(tx *types.Transaction) {
+	for _, module := range w.modules {
+		if transactionModule, ok := module.(modules.TransactionModule); ok {
+			err := transactionModule.HandleTx(tx)
+			if err != nil {
+				w.logger.TxError(module, tx, err)
+			}
+		}
+	}
+}
+
+// handleMessage handles a single message within a transaction.
+func (w BlockWorker) handleMessage(index int, msg types.Message, tx *types.Transaction) {
+	// Allow modules to handle the message
+	for _, module := range w.modules {
+		if messageModule, ok := module.(modules.MessageModule); ok {
+			err := messageModule.HandleMsg(index, msg, tx)
+			if err != nil {
+				w.logger.MsgError(module, tx, msg, err)
+			}
+		}
+
+		// If it's a MsgExecute, handle inner messages
+		if msg.GetType() == "/cosmos.authz.v1beta1.MsgExec" {
+			var msgExec struct {
+				Msgs []json.RawMessage `json:"msgs"`
+			}
+
+			err := json.Unmarshal(msg.GetBytes(), &msgExec)
+			if err != nil {
+				w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] unable to unmarshal MsgExec inner messages", w.pipelineType, w.index), "error", err)
+				return
+			}
+
+			for authzIndex, msgAny := range msgExec.Msgs {
+				executedMsg, err := types.UnmarshalMessage(authzIndex, msgAny)
+				if err != nil {
+					w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] unable to unpack MsgExec inner message", w.pipelineType, w.index), "index", authzIndex, "error", err)
+				}
+
+				for _, module := range w.modules {
+					if messageModule, ok := module.(modules.AuthzMessageModule); ok {
+						err = messageModule.HandleMsgExec(index, authzIndex, executedMsg, tx)
+						if err != nil {
+							w.logger.MsgError(module, tx, executedMsg, err)
+						}
+					}
+				}
+			}
+		}
+	}
 }

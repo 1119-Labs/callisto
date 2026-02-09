@@ -3,7 +3,6 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/1119-Labs/callisto/v4/lib/database"
 	"github.com/1119-Labs/callisto/v4/lib/logging"
@@ -63,8 +62,7 @@ func (w BlockWorker) Start() {
 
 	err = w.blockQueue.Consume(func(height int64) error {
 		if err := w.ProcessIfNotExists(height); err != nil {
-			time.Sleep(config.GetAvgBlockTime())
-			w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] re-enqueueing failed block", w.pipelineType, w.index), "height", height, "err", err)
+			w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] failed to process block", w.pipelineType, w.index), "height", height, "err", err)
 			return err
 		}
 
@@ -132,7 +130,7 @@ func (w BlockWorker) Process(height int64) error {
 	}
 
 	// Process all transactions (skip first tx in block - it's a system tx)
-	if txs != nil && len(txs) > 1 {
+	if len(txs) > 1 {
 		for i := 1; i < len(txs); i++ {
 			tx := txs[i]
 			if err := w.ProcessTx(tx); err != nil {

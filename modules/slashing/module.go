@@ -1,8 +1,8 @@
 package slashing
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/1119-Labs/callisto/v4/lib/modules"
+	"github.com/cosmos/cosmos-sdk/codec"
 
 	"github.com/1119-Labs/callisto/v4/database"
 	slashingsource "github.com/1119-Labs/callisto/v4/modules/slashing/source"

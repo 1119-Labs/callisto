@@ -258,9 +258,7 @@ func (cp *Node) BlockTransactions(height int64) ([]*types.Transaction, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading block transactions response body: %w", err)
 	}
-
-	fmt.Printf("[BlockTransactions] Response body (first 500 chars): %.500s\n", string(body))
-
+	// fmt.Printf("[BlockTransactions] Response body (first 500 chars): %.500s\n", string(body))
 	// Parse as {"txs": [...]}
 	var txResponse BlockTransactionsResponse
 	err = json.Unmarshal(body, &txResponse)

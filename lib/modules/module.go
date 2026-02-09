@@ -55,14 +55,6 @@ type PeriodicOperationsModule interface {
 	RegisterPeriodicOperations(scheduler *gocron.Scheduler) error
 }
 
-type FastSyncModule interface {
-	// DownloadState allows to download the module state at the given height.
-	// This will be called only when the fast sync is used, and only once for the initial height.
-	// It should query the gRPC and get all the possible data.
-	// NOTE. If an error is returned, following modules will still be called.
-	DownloadState(height int64) error
-}
-
 type GenesisModule interface {
 	// HandleGenesis allows to handle the genesis state.
 	// For convenience of use, the already-unmarshalled AppState is provided along with the full GenesisDoc.

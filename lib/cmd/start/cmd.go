@@ -200,28 +200,14 @@ func enqueueMissingBlocks(exportQueue types.HeightQueue, ctx *parser.Context) {
 		startHeight = utils.MaxInt64(1, lastDbBlockHeight)
 	}
 
-	if cfg.FastSync {
-		ctx.Logger.Info("fast sync is enabled, ignoring all previous blocks", "latest_block_height", latestBlockHeight)
-		for _, module := range ctx.Modules {
-			if mod, ok := module.(modules.FastSyncModule); ok {
-				err := mod.DownloadState(latestBlockHeight)
-				if err != nil {
-					ctx.Logger.Error("error while performing fast sync",
-						"err", err,
-						"last_block_height", latestBlockHeight,
-						"module", module.Name(),
-					)
-				}
-			}
+	ctx.Logger.Info("[enqueueMissingBlocks] syncing missing blocks...", "latest_block_height", latestBlockHeight, "start_height", startHeight)
+	for _, i := range ctx.Database.GetMissingHeights(startHeight, latestBlockHeight) {
+		// ctx.Logger.Debug("[enqueueMissingBlocks] enqueueing missing block", "height", i)
+		if err := exportQueue.Publish(i); err != nil {
+			ctx.Logger.Error("failed to publish missing block", "height", i, "err", err)
 		}
-	} else {
-		ctx.Logger.Info("[enqueueMissingBlocks] syncing missing blocks...", "latest_block_height", latestBlockHeight, "start_height", startHeight)
-		for _, i := range ctx.Database.GetMissingHeights(startHeight, latestBlockHeight) {
-			// ctx.Logger.Debug("[enqueueMissingBlocks] enqueueing missing block", "height", i)
-			if err := exportQueue.Publish(i); err != nil {
-				ctx.Logger.Error("failed to publish missing block", "height", i, "err", err)
-			}
-			time.Sleep(5 * time.Second)
+		if cfg.MissingBlockEnqueueDelay != nil {
+			time.Sleep(*cfg.MissingBlockEnqueueDelay)
 		}
 	}
 }
@@ -229,7 +215,6 @@ func enqueueMissingBlocks(exportQueue types.HeightQueue, ctx *parser.Context) {
 // enqueueNewBlocks enqueues new block heights onto the provided queue.
 func enqueueNewBlocks(exportQueue types.HeightQueue, ctx *parser.Context) {
 	currHeight := mustGetLatestHeight(ctx)
-
 	// Enqueue upcoming heights
 	for {
 		latestBlockHeight := mustGetLatestHeight(ctx)

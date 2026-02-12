@@ -57,6 +57,25 @@ CREATE TABLE transaction
     raw_log      TEXT,
     logs         JSONB,
 
+    /* Extra tx response fields */
+    code         INTEGER          DEFAULT 0,
+    codespace    TEXT             DEFAULT '',
+    data         TEXT,
+    info         TEXT             DEFAULT '',
+    timestamp    TIMESTAMP WITHOUT TIME ZONE,
+    events       JSONB,
+
+    /* Extra body fields */
+    timeout_height BIGINT         DEFAULT 0,
+    extension_options JSONB       DEFAULT '[]'::JSONB,
+    non_critical_extension_options JSONB DEFAULT '[]'::JSONB,
+
+    /* Extra auth_info fields */
+    tip          JSONB,
+
+    /* Full raw JSON of the transaction (for explorer raw view like Mintscan) */
+    raw_json     JSONB,
+
     /* PSQL partition */
     partition_id BIGINT  NOT NULL DEFAULT 0,
 

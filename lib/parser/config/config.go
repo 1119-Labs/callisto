@@ -16,6 +16,11 @@ type Config struct {
 	// Old/missing block pipeline workers (lower priority - backfill)
 	OldBlockWorkers int64 `yaml:"old_block_workers"`
 
+	// Dead-letter queue retry workers (optional, disabled by default)
+	ParseDLQ   bool           `yaml:"parse_dead_letter_queue"`
+	DLQWorkers int64          `yaml:"dlq_workers"`
+	DLQMinAge  *time.Duration `yaml:"dlq_min_age,omitempty"` // minimum time a message must sit in DLQ before retry (default 5m)
+
 	// Delay between enqueueing missing blocks
 	MissingBlockEnqueueDelay *time.Duration `yaml:"missing_block_enqueue_delay,omitempty"`
 }
@@ -30,9 +35,13 @@ func NewParsingConfig(
 	avgBlockTime *time.Duration,
 	missingBlockEnqueueDelay *time.Duration,
 ) Config {
+	dlqMinAge := 5 * time.Minute
 	return Config{
 		NewBlockWorkers:          newBlockWorkers,
 		OldBlockWorkers:          oldBlockWorkers,
+		ParseDLQ:                 false,
+		DLQWorkers:               1,
+		DLQMinAge:                &dlqMinAge,
 		ParseOldBlocks:           parseOldBlocks,
 		ParseNewBlocks:           parseNewBlocks,
 		ParseGenesis:             parseGenesis,

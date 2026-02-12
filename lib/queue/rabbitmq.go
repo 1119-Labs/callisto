@@ -75,6 +75,7 @@ type RabbitMQHeightQueue struct {
 	conn      *amqp.Connection
 	channel   *amqp.Channel
 	queueName string
+	minAge    time.Duration // If > 0, Consume will wait until the message has been in the queue for at least this duration
 }
 
 // connectHeightQueue creates a new RabbitMQ connection for a block height queue.
@@ -156,6 +157,52 @@ func ConnectOldBlockQueue(cfg config.RabbitMQConfig) (types.HeightQueue, error) 
 	return connectHeightQueue(cfg, cfg.OldBlockQueueName)
 }
 
+// connectDLQueue creates a connection that consumes from an existing dead-letter queue.
+// Unlike connectHeightQueue, it does NOT create the DLQ or DLX — they must already exist.
+func connectDLQueue(cfg config.RabbitMQConfig, dlqName string, minAge time.Duration) (types.HeightQueue, error) {
+	if cfg.URL == "" {
+		return nil, fmt.Errorf("rabbitmq url is empty")
+	}
+
+	conn, err := amqp.Dial(cfg.URL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to rabbitmq for DLQ: %w", err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("failed to open rabbitmq channel for DLQ: %w", err)
+	}
+
+	// Prefetch=1 for DLQ: process one message at a time so the sleep-until-ready
+	// delay doesn't hold multiple messages hostage.
+	if err := ch.Qos(1, 0, false); err != nil {
+		_ = ch.Close()
+		_ = conn.Close()
+		return nil, fmt.Errorf("failed to set rabbitmq qos for DLQ: %w", err)
+	}
+
+	return &RabbitMQHeightQueue{
+		conn:      conn,
+		channel:   ch,
+		queueName: dlqName,
+		minAge:    minAge,
+	}, nil
+}
+
+// ConnectNewBlockDLQ creates a connection to the new-block dead-letter queue.
+// minAge is the minimum time a message must have been in the DLQ before it is consumed.
+func ConnectNewBlockDLQ(cfg config.RabbitMQConfig, minAge time.Duration) (types.HeightQueue, error) {
+	return connectDLQueue(cfg, cfg.NewBlockQueueName+"-dlq", minAge)
+}
+
+// ConnectOldBlockDLQ creates a connection to the old-block dead-letter queue.
+// minAge is the minimum time a message must have been in the DLQ before it is consumed.
+func ConnectOldBlockDLQ(cfg config.RabbitMQConfig, minAge time.Duration) (types.HeightQueue, error) {
+	return connectDLQueue(cfg, cfg.OldBlockQueueName+"-dlq", minAge)
+}
+
 // Publish enqueues a block height.
 func (q *RabbitMQHeightQueue) Publish(height int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -192,6 +239,11 @@ func (q *RabbitMQHeightQueue) Consume(handler func(height int64) error) error {
 	}
 
 	for delivery := range deliveries {
+		// If minAge is set (DLQ consumer), wait until the message has aged enough
+		if q.minAge > 0 {
+			q.waitForMinAge(delivery)
+		}
+
 		height, err := strconv.ParseInt(string(delivery.Body), 10, 64)
 		if err != nil {
 			// Send to DLQ with parse error
@@ -214,6 +266,32 @@ func (q *RabbitMQHeightQueue) Consume(handler func(height int64) error) error {
 	}
 
 	return nil
+}
+
+// waitForMinAge sleeps until the message has been in the DLQ for at least q.minAge.
+// It reads the "x-failed-at" header (RFC3339) set by sendToDeadLetter.
+func (q *RabbitMQHeightQueue) waitForMinAge(delivery amqp.Delivery) {
+	if delivery.Headers == nil {
+		return
+	}
+
+	failedAtStr, ok := delivery.Headers["x-failed-at"].(string)
+	if !ok || failedAtStr == "" {
+		return
+	}
+
+	failedAt, err := time.Parse(time.RFC3339, failedAtStr)
+	if err != nil {
+		fmt.Printf("[RabbitMQ-%s] could not parse x-failed-at header: %v\n", q.queueName, err)
+		return
+	}
+
+	age := time.Since(failedAt)
+	if age < q.minAge {
+		wait := q.minAge - age
+		fmt.Printf("[RabbitMQ-%s] message aged %s, waiting %s before retry (min_age=%s)\n", q.queueName, age.Round(time.Second), wait.Round(time.Second), q.minAge)
+		time.Sleep(wait)
+	}
 }
 
 // sendToDeadLetter manually publishes a failed message to the dead letter queue with error details.

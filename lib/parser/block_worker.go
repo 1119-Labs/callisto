@@ -74,6 +74,40 @@ func (w BlockWorker) Start() {
 	}
 }
 
+// StartDLQ starts a dead-letter queue worker that force-retries failed blocks.
+// Unlike Start(), it always calls Process() (never skips already-existing blocks)
+// since the whole point is to retry something that previously failed.
+func (w BlockWorker) StartDLQ() {
+	if w.blockQueue == nil {
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] DLQ worker queue is nil", w.pipelineType, w.index))
+		return
+	}
+
+	logging.WorkerCount.Inc()
+	chainID, err := w.node.ChainID()
+	if err != nil {
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] error while getting chain ID from the node", w.pipelineType, w.index), "err", err)
+	}
+
+	w.logger.Info(fmt.Sprintf("[BlockWorker-%s-%d] DLQ retry worker started", w.pipelineType, w.index))
+
+	err = w.blockQueue.Consume(func(height int64) error {
+		w.logger.Info(fmt.Sprintf("[BlockWorker-%s-%d] DLQ retrying block", w.pipelineType, w.index), "height", height)
+
+		if err := w.Process(height); err != nil {
+			w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] DLQ retry failed for block", w.pipelineType, w.index), "height", height, "err", err)
+			return err
+		}
+
+		w.logger.Info(fmt.Sprintf("[BlockWorker-%s-%d] DLQ retry succeeded for block", w.pipelineType, w.index), "height", height)
+		logging.WorkerHeight.WithLabelValues(fmt.Sprintf("dlq-%d", w.index), chainID).Set(float64(height))
+		return nil
+	})
+	if err != nil {
+		w.logger.Error(fmt.Sprintf("[BlockWorker-%s-%d] DLQ worker consume failed", w.pipelineType, w.index), "err", err)
+	}
+}
+
 // ProcessIfNotExists processes a block if it doesn't already exist in the database.
 func (w BlockWorker) ProcessIfNotExists(height int64) error {
 	exists, err := w.db.HasBlock(height)

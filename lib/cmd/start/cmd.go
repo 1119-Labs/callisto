@@ -131,6 +131,50 @@ func startParsing(ctx *parser.Context) error {
 		oldBlockWorkers[i] = parser.NewBlockWorker(ctx, blockConsumer, int(i), "old")
 	}
 
+	// =============================================================
+	// DEAD-LETTER QUEUE PIPELINE (optional - retry failed blocks)
+	// =============================================================
+
+	var dlqWorkers []parser.BlockWorker
+	if cfg.ParseDLQ {
+		dlqWorkerCount := cfg.DLQWorkers
+		if dlqWorkerCount <= 0 {
+			dlqWorkerCount = 1
+		}
+
+		// Default min age: 5 minutes
+		minAge := 5 * time.Minute
+		if cfg.DLQMinAge != nil {
+			minAge = *cfg.DLQMinAge
+		}
+
+		dlqWorkers = make([]parser.BlockWorker, 0, dlqWorkerCount*2)
+
+		// New-block DLQ workers
+		for i := int64(0); i < dlqWorkerCount; i++ {
+			dlqConsumer, err := queue.ConnectNewBlockDLQ(queueCfg, minAge)
+			if err != nil {
+				ctx.Logger.Error("failed to connect to new-block DLQ, skipping DLQ workers for new-block", "err", err)
+				break
+			}
+			allConnections = append(allConnections, dlqConsumer)
+			dlqWorkers = append(dlqWorkers, parser.NewBlockWorker(ctx, dlqConsumer, int(i), "new-dlq"))
+		}
+
+		// Old-block DLQ workers
+		for i := int64(0); i < dlqWorkerCount; i++ {
+			dlqConsumer, err := queue.ConnectOldBlockDLQ(queueCfg, minAge)
+			if err != nil {
+				ctx.Logger.Error("failed to connect to old-block DLQ, skipping DLQ workers for old-block", "err", err)
+				break
+			}
+			allConnections = append(allConnections, dlqConsumer)
+			dlqWorkers = append(dlqWorkers, parser.NewBlockWorker(ctx, dlqConsumer, int(i), "old-dlq"))
+		}
+
+		ctx.Logger.Info("DLQ retry workers configured", "count", len(dlqWorkers))
+	}
+
 	waitGroup.Add(1)
 
 	// Run all the async operations
@@ -150,6 +194,12 @@ func startParsing(ctx *parser.Context) error {
 	for i, w := range oldBlockWorkers {
 		ctx.Logger.Debug("starting old block worker...", "number", i+1)
 		go w.Start()
+	}
+
+	// Start DLQ retry workers (if enabled)
+	for i, w := range dlqWorkers {
+		ctx.Logger.Debug("starting DLQ retry worker...", "number", i+1)
+		go w.StartDLQ()
 	}
 
 	// Listen for and trap any OS signal to gracefully shutdown and exit

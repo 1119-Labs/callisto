@@ -93,14 +93,49 @@ type Transaction struct {
 	*TxResponse `json:"tx_response,omitempty"`
 	// Override the Tx field to apply the custom type
 	*Tx `json:"tx,omitempty"`
+	// RawJSON stores the original JSON representation of the transaction (for explorer raw view)
+	RawJSON json.RawMessage `json:"-"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// It captures the raw JSON bytes before unmarshaling into the struct fields.
+func (t *Transaction) UnmarshalJSON(data []byte) error {
+	// Save the raw JSON bytes
+	t.RawJSON = make(json.RawMessage, len(data))
+	copy(t.RawJSON, data)
+
+	// Unmarshal into a temporary type to avoid infinite recursion
+	type TempTransaction struct {
+		*TxResponse `json:"tx_response,omitempty"`
+		*Tx         `json:"tx,omitempty"`
+	}
+	var temp TempTransaction
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+	t.TxResponse = temp.TxResponse
+	t.Tx = temp.Tx
+	return nil
 }
 
 // NewTransaction allows to create a new Transaction instance from the given txResponse
 func NewTransaction(txResponse *TxResponse, tx *Tx) (*Transaction, error) {
-	return &Transaction{
+	txn := &Transaction{
 		Tx:         tx,
 		TxResponse: txResponse,
-	}, nil
+	}
+	// Generate raw JSON for transactions created programmatically (e.g. local node)
+	rawBz, err := json.Marshal(struct {
+		TxResponse *TxResponse `json:"tx_response,omitempty"`
+		Tx         *Tx         `json:"tx,omitempty"`
+	}{
+		TxResponse: txResponse,
+		Tx:         tx,
+	})
+	if err == nil {
+		txn.RawJSON = rawBz
+	}
+	return txn, nil
 }
 
 // FindEventByType searches inside the given tx events for the message having the specified index, in order

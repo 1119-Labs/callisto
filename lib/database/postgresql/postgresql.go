@@ -212,8 +212,10 @@ func (db *Database) SaveTx(tx *types.Transaction) error {
 func (db *Database) saveTxInsidePartition(tx *types.Transaction, partitionID int64) error {
 	sqlStatement := `
 INSERT INTO transaction 
-(hash, height, success, messages, memo, signatures, signer_infos, fee, gas_wanted, gas_used, raw_log, logs, partition_id) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+(hash, height, success, messages, memo, signatures, signer_infos, fee, gas_wanted, gas_used, raw_log, logs,
+ code, codespace, data, info, timestamp, events, timeout_height, extension_options, non_critical_extension_options, tip,
+ raw_json, partition_id) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) 
 ON CONFLICT (hash, height, partition_id) DO UPDATE 
 	SET success = excluded.success, 
 		messages = excluded.messages,
@@ -224,47 +226,144 @@ ON CONFLICT (hash, height, partition_id) DO UPDATE
 		gas_wanted = excluded.gas_wanted, 
 		gas_used = excluded.gas_used,
 		raw_log = excluded.raw_log, 
-		logs = excluded.logs`
+		logs = excluded.logs,
+		code = excluded.code,
+		codespace = excluded.codespace,
+		data = excluded.data,
+		info = excluded.info,
+		timestamp = excluded.timestamp,
+		events = excluded.events,
+		timeout_height = excluded.timeout_height,
+		extension_options = excluded.extension_options,
+		non_critical_extension_options = excluded.non_critical_extension_options,
+		tip = excluded.tip,
+		raw_json = excluded.raw_json`
 
-	var sigs = make([]string, len(tx.Signatures))
-	for index, sig := range tx.Signatures {
-		sigs[index] = base64.StdEncoding.EncodeToString(sig)
-	}
+	// Extract body fields (handle nil tx body for failed txs where tx is null)
+	var sigs []string
+	var msgsBz string
+	var memo string
+	var feeBz []byte
+	var sigInfoBz string
+	var timeoutHeight uint64
+	var extensionOptsBz []byte
+	var nonCriticalExtOptsBz []byte
+	var tipBz []byte
 
-	var msgs = make([]string, len(tx.Body.Messages))
-	for index, msg := range tx.Body.Messages {
-		msgs[index] = string(msg.GetBytes())
-	}
-	msgsBz := fmt.Sprintf("[%s]", strings.Join(msgs, ","))
-
-	feeBz, err := json.Marshal(tx.AuthInfo.Fee)
-	if err != nil {
-		return fmt.Errorf("failed to JSON encode tx fee: %s", err)
-	}
-
-	var sigInfos = make([]string, len(tx.AuthInfo.SignerInfos))
-	for index, info := range tx.AuthInfo.SignerInfos {
-		bz, err := json.Marshal(info)
-		if err != nil {
-			return err
+	if tx.Tx != nil && tx.Tx.Body != nil {
+		sigs = make([]string, len(tx.Signatures))
+		for index, sig := range tx.Signatures {
+			sigs[index] = base64.StdEncoding.EncodeToString(sig)
 		}
-		sigInfos[index] = string(bz)
+
+		msgs := make([]string, len(tx.Body.Messages))
+		for index, msg := range tx.Body.Messages {
+			msgs[index] = string(msg.GetBytes())
+		}
+		msgsBz = fmt.Sprintf("[%s]", strings.Join(msgs, ","))
+		memo = tx.Body.Memo
+		timeoutHeight = tx.Body.TimeoutHeight
+
+		// Extension options from body
+		if tx.Body.TxBody != nil && len(tx.Body.TxBody.ExtensionOptions) > 0 {
+			extensionOptsBz, _ = json.Marshal(tx.Body.TxBody.ExtensionOptions)
+		}
+		if tx.Body.TxBody != nil && len(tx.Body.TxBody.NonCriticalExtensionOptions) > 0 {
+			nonCriticalExtOptsBz, _ = json.Marshal(tx.Body.TxBody.NonCriticalExtensionOptions)
+		}
+	} else {
+		sigs = []string{}
+		msgsBz = "[]"
 	}
-	sigInfoBz := fmt.Sprintf("[%s]", strings.Join(sigInfos, ","))
+
+	if tx.Tx != nil && tx.Tx.AuthInfo != nil {
+		var err error
+		feeBz, err = json.Marshal(tx.AuthInfo.Fee)
+		if err != nil {
+			return fmt.Errorf("failed to JSON encode tx fee: %s", err)
+		}
+
+		sigInfos := make([]string, len(tx.AuthInfo.SignerInfos))
+		for index, info := range tx.AuthInfo.SignerInfos {
+			bz, err := json.Marshal(info)
+			if err != nil {
+				return err
+			}
+			sigInfos[index] = string(bz)
+		}
+		sigInfoBz = fmt.Sprintf("[%s]", strings.Join(sigInfos, ","))
+
+		// Tip (if available)
+		if tx.AuthInfo.AuthInfo != nil && tx.AuthInfo.AuthInfo.Tip != nil {
+			tipBz, _ = json.Marshal(tx.AuthInfo.AuthInfo.Tip)
+		}
+	} else {
+		feeBz = []byte("{}")
+		sigInfoBz = "[]"
+	}
 
 	logsBz, err := json.Marshal(tx.Logs)
 	if err != nil {
 		return err
 	}
 
+	// Extract TxResponse extra fields
+	var code uint32
+	var codespace string
+	var txData string
+	var info string
+	var txTimestamp *time.Time
+	var eventsBz []byte
+
+	if tx.TxResponse != nil {
+		code = tx.TxResponse.Code
+		codespace = tx.TxResponse.Codespace
+		txData = tx.TxResponse.Data
+		info = tx.TxResponse.Info
+
+		// Parse timestamp from TxResponse
+		if tx.TxResponse.Timestamp != "" {
+			t, parseErr := time.Parse(time.RFC3339Nano, tx.TxResponse.Timestamp)
+			if parseErr == nil {
+				txTimestamp = &t
+			}
+		}
+
+		// Marshal events from the embedded sdk.TxResponse
+		if tx.TxResponse.TxResponse != nil && len(tx.TxResponse.TxResponse.Events) > 0 {
+			eventsBz, _ = json.Marshal(tx.TxResponse.TxResponse.Events)
+		}
+	}
+
+	// Build nullable JSON values for JSONB columns
+	extensionOptsVal := toNullableJSONString(extensionOptsBz, "[]")
+	nonCriticalExtOptsVal := toNullableJSONString(nonCriticalExtOptsBz, "[]")
+	tipVal := toNullableJSONString(tipBz, "")
+	eventsVal := toNullableJSONString(eventsBz, "")
+	rawJSONVal := toNullableJSONString(tx.RawJSON, "")
+
 	_, err = db.SQL.Exec(sqlStatement,
 		tx.TxHash, tx.Height, tx.Successful(),
-		msgsBz, tx.Body.Memo, pq.Array(sigs),
+		msgsBz, memo, pq.Array(sigs),
 		sigInfoBz, string(feeBz),
 		tx.GasWanted, tx.GasUsed, tx.RawLog, string(logsBz),
-		partitionID,
+		code, codespace, txData, info, txTimestamp, eventsVal,
+		timeoutHeight, extensionOptsVal, nonCriticalExtOptsVal, tipVal,
+		rawJSONVal, partitionID,
 	)
 	return err
+}
+
+// toNullableJSONString converts a byte slice to a sql.NullString suitable for JSONB columns.
+// If bz is nil/empty, returns the fallback value (or NULL if fallback is empty).
+func toNullableJSONString(bz []byte, fallback string) sql.NullString {
+	if len(bz) > 0 {
+		return sql.NullString{Valid: true, String: string(bz)}
+	}
+	if fallback != "" {
+		return sql.NullString{Valid: true, String: fallback}
+	}
+	return sql.NullString{Valid: false}
 }
 
 // HasValidator implements database.Database

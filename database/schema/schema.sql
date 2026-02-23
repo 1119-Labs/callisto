@@ -57,6 +57,22 @@ CREATE TABLE transaction
     raw_log      TEXT,
     logs         JSONB,
 
+
+    code         INTEGER          DEFAULT 0,
+    codespace    TEXT             DEFAULT '',
+    data         TEXT,
+    info         TEXT             DEFAULT '',
+    timestamp    TIMESTAMP WITHOUT TIME ZONE,
+    events       JSONB,
+
+    timeout_height BIGINT         DEFAULT 0,
+    extension_options JSONB       DEFAULT '[]'::JSONB,
+    non_critical_extension_options JSONB DEFAULT '[]'::JSONB,
+
+    tip          JSONB,
+
+    raw_json     JSONB,
+
     
     partition_id BIGINT  NOT NULL DEFAULT 0,
 
